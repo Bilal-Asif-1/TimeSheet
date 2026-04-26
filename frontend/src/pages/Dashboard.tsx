@@ -5,12 +5,36 @@ function Dashboard() {
   const [hours, setHours] = useState<number>(0);
   const [list, setList] = useState<{ task: string; hours: number }[]>([]);
 
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!task || hours <= 0) return;
 
-    setList([...list, { task, hours }]);
-    setTask("");
-    setHours(0);
+    try {
+      const res = await fetch("http://localhost:5001/timesheet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          task,
+          hours,
+        }),
+      });
+
+      if (!res.ok) {
+        console.log("Server error");
+        return;
+      }
+
+      const data = await res.json();
+
+      setList([...list, { task, hours }]);
+      setTask("");
+      setHours(0);
+
+      console.log(data.message);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -36,9 +60,7 @@ function Dashboard() {
 
       {list.map((item, index) => (
         <div key={index}>
-          <p>
-            {item.task} - {item.hours} hrs
-          </p>
+          {item.task} - {item.hours} hrs
         </div>
       ))}
     </div>

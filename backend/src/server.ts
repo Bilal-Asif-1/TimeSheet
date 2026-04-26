@@ -1,18 +1,25 @@
-import app from "./app";
+import express from "express";
+import cors from "cors";
 import { connectDB } from "./config/db";
+import timesheetRouter from "./routes/timesheet.routes";
 
-// This is the main entry file of your backend app.
-// When you run `npm run dev`, this file starts first.
-// This file does only 2 jobs:
-// 1) connect database
-// 2) start listening on a port
+const app = express();
 
-// Server port (fallback to 5000 if PORT is not set).
-const PORT = process.env.PORT || 5000;
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  }),
+);
 
-// Start order:
-// 1) Connect to database
-// 2) Start server
+app.use(express.json());
+
+// routes
+app.use("/timesheet", timesheetRouter);
+
+const PORT = process.env.PORT || 5001;
+
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);

@@ -5,9 +5,9 @@ type Props = {
 function Login({ onLogin }: Props) {
   return (
     <div style={{ padding: 20 }}>
-      <h2>Login Page</h2>
+      <h2>Login (Demo Mode)</h2>
 
-      <button onClick={onLogin}>Login (Mock)</button>
+      <button onClick={onLogin}>Enter Dashboard</button>
     </div>
   );
 }
