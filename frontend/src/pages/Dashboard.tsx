@@ -1,46 +1,65 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-function Dashboard() {
+const BASE_URL = "http://localhost:5001/timesheet";
+
+export default function Dashboard() {
+  const [data, setData] = useState<any[]>([]);
   const [task, setTask] = useState("");
-  const [hours, setHours] = useState<number>(0);
-  const [list, setList] = useState<{ task: string; hours: number }[]>([]);
+  const [hours, setHours] = useState("");
 
-  const addEntry = async () => {
-    if (!task || hours <= 0) return;
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editTask, setEditTask] = useState("");
+  const [editHours, setEditHours] = useState("");
 
-    try {
-      const res = await fetch("http://localhost:5001/timesheet", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          task,
-          hours,
-        }),
-      });
+  const load = async () => {
+    const res = await fetch(BASE_URL);
+    setData(await res.json());
+  };
 
-      if (!res.ok) {
-        console.log("Server error");
-        return;
-      }
+  useEffect(() => {
+    load();
+  }, []);
 
-      const data = await res.json();
+  const add = async () => {
+    await fetch(BASE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task, hours: Number(hours) }),
+    });
 
-      setList([...list, { task, hours }]);
-      setTask("");
-      setHours(0);
+    setTask("");
+    setHours("");
+    load();
+  };
 
-      console.log(data.message);
-    } catch (err) {
-      console.error(err);
-    }
+  const remove = async (id: number) => {
+    await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
+    load();
+  };
+
+  const update = async () => {
+    await fetch(`${BASE_URL}/${editId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        task: editTask,
+        hours: Number(editHours),
+      }),
+    });
+
+    setEditId(null);
+    setEditTask("");
+    setEditHours("");
+    load();
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Timesheet Dashboard</h2>
+    <div>
+      <h2>Dashboard</h2>
 
+      {/* ADD FORM */}
       <input
         placeholder="Task"
         value={task}
@@ -48,23 +67,51 @@ function Dashboard() {
       />
 
       <input
-        type="number"
         placeholder="Hours"
+        type="number"
         value={hours}
-        onChange={(e) => setHours(Number(e.target.value))}
+        onChange={(e) => setHours(e.target.value)}
       />
 
-      <button onClick={addEntry}>Add</button>
+      <button onClick={add}>Add</button>
 
       <hr />
 
-      {list.map((item, index) => (
-        <div key={index}>
-          {item.task} - {item.hours} hrs
+      {/* LIST + EDIT */}
+      {data.map((item) => (
+        <div key={item.id}>
+          {editId === item.id ? (
+            <>
+              <input
+                value={editTask}
+                onChange={(e) => setEditTask(e.target.value)}
+              />
+
+              <input
+                value={editHours}
+                type="number"
+                onChange={(e) => setEditHours(e.target.value)}
+              />
+
+              <button onClick={update}>Save</button>
+            </>
+          ) : (
+            <>
+              {item.task} - {item.hours}
+              <button
+                onClick={() => {
+                  setEditId(item.id);
+                  setEditTask(item.task);
+                  setEditHours(item.hours);
+                }}
+              >
+                Edit
+              </button>
+              <button onClick={() => remove(item.id)}>Delete</button>
+            </>
+          )}
         </div>
       ))}
     </div>
   );
 }
-
-export default Dashboard;

@@ -1,19 +1,11 @@
-import { useState } from "react";
-import Login from "./pages/Login";
+import { useMsal } from "@azure/msal-react";
 import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+export default function App() {
+  const { accounts } = useMsal();
 
-  return (
-    <div>
-      {isLoggedIn ? (
-        <Dashboard />
-      ) : (
-        <Login onLogin={() => setIsLoggedIn(true)} />
-      )}
-    </div>
-  );
+  const isLoggedIn = accounts.length > 0;
+
+  return <div>{isLoggedIn ? <Dashboard /> : <Login />}</div>;
 }
-
-export default App;

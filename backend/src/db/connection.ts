@@ -1,10 +1,8 @@
 import sql from "mssql";
 import dotenv from "dotenv";
 
-// Load .env values so database credentials are available.
 dotenv.config();
 
-// Database settings read from .env
 const config: sql.config = {
   user: process.env.DB_USER!,
   password: process.env.DB_PASSWORD!,
@@ -16,16 +14,14 @@ const config: sql.config = {
   },
 };
 
+let pool: sql.ConnectionPool;
+
 export const connectDB = async () => {
-  try {
-    // Create SQL connection.
-    await sql.connect(config);
-    console.log("✅ SQL Connected");
-  } catch (err) {
-    // Print connection error if DB is not reachable.
-    console.error("DB Error:", err);
+  if (!pool) {
+    pool = await sql.connect(config);
+    console.log("✅ MSSQL Connected");
   }
+  return pool;
 };
 
-// Export SQL object if another file needs query helpers/types.
 export default sql;

@@ -1,15 +1,17 @@
-type Props = {
-  onLogin: () => void;
-};
+import { useMsal } from "@azure/msal-react";
 
-function Login({ onLogin }: Props) {
-  return (
-    <div style={{ padding: 20 }}>
-      <h2>Login (Demo Mode)</h2>
+export default function Login() {
+  const { instance } = useMsal();
 
-      <button onClick={onLogin}>Enter Dashboard</button>
-    </div>
-  );
+  const login = async () => {
+    try {
+      await instance.loginPopup({
+        scopes: ["User.Read"],
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return <button onClick={() => login()}>Login with Microsoft</button>;
 }
-
-export default Login;

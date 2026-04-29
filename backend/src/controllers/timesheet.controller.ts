@@ -38,3 +38,45 @@ export const getTimesheets = async (_: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const updateTimesheet = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { task, hours } = req.body;
+
+    const pool = await connectDB();
+
+    await pool
+      .request()
+      .input("id", sql.Int, id)
+      .input("task", sql.VarChar, task)
+      .input("hours", sql.Int, hours).query(`
+        UPDATE Timesheets
+        SET task = @task, hours = @hours
+        WHERE id = @id
+      `);
+
+    res.json({ message: "Timesheet updated" });
+  } catch (err: unknown) {
+    const error = err as Error;
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const deleteTimesheet = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const pool = await connectDB();
+
+    await pool.request().input("id", sql.Int, id).query(`
+        DELETE FROM Timesheets
+        WHERE id = @id
+      `);
+
+    res.json({ message: "Timesheet deleted" });
+  } catch (err: unknown) {
+    const error = err as Error;
+    res.status(500).json({ error: error.message });
+  }
+};
