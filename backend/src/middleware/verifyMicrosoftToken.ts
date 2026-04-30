@@ -12,7 +12,8 @@ type JwtPayloadWithClaims = jwt.JwtPayload & {
 };
 
 const client = jwksClient({
-  jwksUri: `https://login.microsoftonline.com/${authConfig.tenantId}/discovery/v2.0/keys`,
+  // "common" lets us validate tokens from any Microsoft tenant/account type.
+  jwksUri: "https://login.microsoftonline.com/common/discovery/v2.0/keys",
 });
 
 // Reads signing key from Microsoft public keys endpoint.

@@ -1,26 +1,11 @@
-import express, { Request } from "express";
-import {
-  microsoftLogin,
-  microsoftCallback,
-} from "../controllers/auth.controller";
+import express from "express";
+import { login, microsoftSync, register } from "../controllers/auth.controller";
 import { verifyMicrosoftToken } from "../middleware/verifyMicrosoftToken";
 
 const router = express.Router();
 
-// Start Microsoft login flow
-router.get("/microsoft/login", microsoftLogin);
-
-// Microsoft redirects back to this URL
-router.get("/microsoft/callback", microsoftCallback);
-
-// Test route to verify token is valid
-router.get("/me", verifyMicrosoftToken, (req, res) => {
-  const user = (req as Request & { user?: unknown }).user ?? null;
-
-  res.json({
-    message: "Token is valid",
-    user,
-  });
-});
+router.post("/register", register);
+router.post("/login", login);
+router.post("/microsoft/sync", verifyMicrosoftToken, microsoftSync);
 
 export default router;

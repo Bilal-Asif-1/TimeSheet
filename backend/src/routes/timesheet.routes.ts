@@ -1,11 +1,5 @@
 import express from "express";
-
-import cors from "cors";
-
-const app = express();
-
-app.use(cors()); // ✅ ADD THIS
-app.use(express.json());
+import { verifyAppToken } from "../middleware/verifyAppToken";
 
 import {
   addTimesheet,
@@ -15,6 +9,9 @@ import {
 } from "../controllers/timesheet.controller";
 
 const router = express.Router();
+
+// Every timesheet endpoint requires our app token.
+router.use(verifyAppToken);
 
 router.get("/", getTimesheets);
 router.post("/", addTimesheet);

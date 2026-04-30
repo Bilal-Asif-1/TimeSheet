@@ -4,6 +4,11 @@ import sql, { connectDB } from "../config/db";
 // CREATE
 export const addTimesheet = async (req: Request, res: Response) => {
   try {
+    const appUser = (req as Request & { appUser?: { userId: number } }).appUser;
+    if (!appUser?.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { task, hours } = req.body;
 
     const pool = await connectDB();
@@ -11,9 +16,10 @@ export const addTimesheet = async (req: Request, res: Response) => {
     await pool
       .request()
       .input("task", sql.VarChar, task)
-      .input("hours", sql.Int, hours).query(`
-        INSERT INTO Timesheets (task, hours)
-        VALUES (@task, @hours)
+      .input("hours", sql.Int, hours)
+      .input("userId", sql.Int, appUser.userId).query(`
+        INSERT INTO Timesheets (task, hours, userId)
+        VALUES (@task, @hours, @userId)
       `);
 
     res.status(200).json({ message: "Timesheet added successfully" });
@@ -24,13 +30,23 @@ export const addTimesheet = async (req: Request, res: Response) => {
 };
 
 // READ
-export const getTimesheets = async (_: Request, res: Response) => {
+export const getTimesheets = async (req: Request, res: Response) => {
   try {
+    const appUser = (req as Request & { appUser?: { userId: number } }).appUser;
+    if (!appUser?.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const pool = await connectDB();
 
-    const result = await pool.request().query(`
-      SELECT * FROM Timesheets
-    `);
+    const result = await pool
+      .request()
+      .input("userId", sql.Int, appUser.userId).query(`
+        SELECT id, task, hours, userId
+        FROM Timesheets
+        WHERE userId = @userId
+        ORDER BY id DESC
+      `);
 
     res.json(result.recordset);
   } catch (err: any) {
@@ -41,6 +57,11 @@ export const getTimesheets = async (_: Request, res: Response) => {
 
 export const updateTimesheet = async (req: Request, res: Response) => {
   try {
+    const appUser = (req as Request & { appUser?: { userId: number } }).appUser;
+    if (!appUser?.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { id } = req.params;
     const { task, hours } = req.body;
 
@@ -50,10 +71,11 @@ export const updateTimesheet = async (req: Request, res: Response) => {
       .request()
       .input("id", sql.Int, id)
       .input("task", sql.VarChar, task)
-      .input("hours", sql.Int, hours).query(`
+      .input("hours", sql.Int, hours)
+      .input("userId", sql.Int, appUser.userId).query(`
         UPDATE Timesheets
         SET task = @task, hours = @hours
-        WHERE id = @id
+        WHERE id = @id AND userId = @userId
       `);
 
     res.json({ message: "Timesheet updated" });
@@ -65,13 +87,21 @@ export const updateTimesheet = async (req: Request, res: Response) => {
 
 export const deleteTimesheet = async (req: Request, res: Response) => {
   try {
+    const appUser = (req as Request & { appUser?: { userId: number } }).appUser;
+    if (!appUser?.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { id } = req.params;
 
     const pool = await connectDB();
 
-    await pool.request().input("id", sql.Int, id).query(`
+    await pool
+      .request()
+      .input("id", sql.Int, id)
+      .input("userId", sql.Int, appUser.userId).query(`
         DELETE FROM Timesheets
-        WHERE id = @id
+        WHERE id = @id AND userId = @userId
       `);
 
     res.json({ message: "Timesheet deleted" });
