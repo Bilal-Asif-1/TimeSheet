@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { connectDB } from "./config/db";
 import timesheetRouter from "./routes/timesheet.routes";
+import authRouter from "./routes/auth.routes";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 
 // routes
 app.use("/timesheet", timesheetRouter);
+app.use("/auth", authRouter);
 
 const PORT = process.env.PORT || 5001;
 
