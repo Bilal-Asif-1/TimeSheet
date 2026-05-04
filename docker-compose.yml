@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Bilal@1122
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "5001:5001"
+    environment:
+      - DB_USER=sa
+      - DB_PASSWORD=Bilal@1122
+      - DB_SERVER=mssql
+      - DB_NAME=TimesheetDB
+    depends_on:
+      - mssql
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mssql_data:

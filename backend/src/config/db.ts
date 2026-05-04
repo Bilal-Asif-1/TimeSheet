@@ -6,7 +6,7 @@ dotenv.config();
 const config: sql.config = {
   user: process.env.DB_USER!,
   password: process.env.DB_PASSWORD!,
-  server: process.env.DB_SERVER!,
+  server: process.env.DB_SERVER!, // 🔥 Docker: this becomes "mssql"
   database: process.env.DB_NAME!,
   options: {
     encrypt: false,
@@ -14,26 +14,40 @@ const config: sql.config = {
   },
 };
 
-let pool: sql.ConnectionPool;
+let pool: sql.ConnectionPool | null = null;
+
+// 🔥 Retry logic for Docker startup
+const connectWithRetry = async (retries = 5): Promise<sql.ConnectionPool> => {
+  try {
+    const connection = await sql.connect(config);
+    console.log("✅ MSSQL Connected");
+    return connection;
+  } catch (err) {
+    console.error(`❌ DB connection failed. Retries left: ${retries}`);
+
+    if (retries === 0) {
+      throw err;
+    }
+
+    await new Promise((res) => setTimeout(res, 3000)); // wait 3 sec
+    return connectWithRetry(retries - 1);
+  }
+};
 
 export const connectDB = async () => {
   if (!pool) {
-    pool = await sql.connect(config);
-    console.log("✅ MSSQL Connected");
+    pool = await connectWithRetry();
   }
   return pool;
 };
 
-// Creates/updates required tables in-place at startup.
-// We intentionally avoid migrations for now as requested.
+// 🔥 Schema setup (same as yours, just safer flow)
 export const ensureSchema = async () => {
   const dbPool = await connectDB();
 
   await dbPool.request().query(`
     IF NOT EXISTS (
-      SELECT 1
-      FROM INFORMATION_SCHEMA.TABLES
-      WHERE TABLE_NAME = 'Users'
+      SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users'
     )
     BEGIN
       CREATE TABLE Users (
@@ -51,15 +65,13 @@ export const ensureSchema = async () => {
   await dbPool.request().query(`
     IF COL_LENGTH('Timesheets', 'userId') IS NULL
     BEGIN
-      ALTER TABLE Timesheets
-      ADD userId INT NULL;
+      ALTER TABLE Timesheets ADD userId INT NULL;
     END
   `);
 
   await dbPool.request().query(`
     IF NOT EXISTS (
-      SELECT 1
-      FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+      SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
       WHERE TABLE_NAME = 'Timesheets'
       AND CONSTRAINT_TYPE = 'FOREIGN KEY'
       AND CONSTRAINT_NAME = 'FK_Timesheets_Users_userId'

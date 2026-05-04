@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "jose": "^4.15.9",
+    "jwks-rsa": "^4.0.1"
+  }
+}

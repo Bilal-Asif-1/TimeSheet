@@ -10,14 +10,14 @@ This file explains:
 ## 1) High-Level Architecture
 
 - `frontend` (React + MSAL) handles UI, login screens, and calling APIs.
-- `backend` (Express + MSSQL) handles auth APIs, user/timesheet data, token validation, and DB access.
+- `backend`  (Express + MSSQL) handles auth APIs, user/timesheet data, token validation, and DB access.
 - Authentication supports:
   - Local register/login (email + password)
   - Microsoft login (MSAL redirect + token sync)
 
 ---
 
-## 2) Frontend File Linking (How files connect)
+## 2)w Frontend File Linking (How files connect)
 
 1. Entry point:
    - `frontend/src/main.tsx`
