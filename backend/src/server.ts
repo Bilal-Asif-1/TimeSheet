@@ -22,9 +22,24 @@ app.use("/auth", authRouter);
 
 const PORT = process.env.PORT || 5001;
 
-connectDB().then(async () => {
-  await ensureSchema();
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
-});
+const startServer = async () => {
+  try {
+    // 1. DB connect
+    await connectDB();
+
+    // 2. schema ensure
+    await ensureSchema();
+
+    // 3. start server ONLY after DB is ready
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+
+    // hard fail (important in Docker / production)
+    process.exit(1);
+  }
+};
+
+startServer();

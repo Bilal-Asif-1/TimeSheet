@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -12,6 +10,18 @@ services:
     volumes:
       - mssql_data:/var/opt/mssql
 
+    # ✅ CRITICAL: DB ready hone ka wait mechanism
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Bilal@1122 -Q 'SELECT 1' || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   backend:
     build: ./backend
     container_name: backend
@@ -20,10 +30,16 @@ services:
     environment:
       - DB_USER=sa
       - DB_PASSWORD=Bilal@1122
-      - DB_SERVER=mssql
+      - DB_SERVER=mssql # ✅ correct hai (change mat karna)
       - DB_NAME=TimesheetDB
+      - DB_PORT=1433
+
+    # ✅ Ab backend tab start hoga jab DB healthy ho
     depends_on:
-      - mssql
+      mssql:
+        condition: service_healthy
+
+    restart: always # ✅ optional but strong safety net
 
   frontend:
     build: ./frontend
