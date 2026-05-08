@@ -1,2 +1,6 @@
-use TimesheetDB;
-SELECT * FROM dbo.Timesheets;
+
+
+
+CREATE DATABASE TimesheetDB;
+GO
+SELECT name FROM sys.databases;
