@@ -22,28 +22,10 @@ services:
     ports:
       - "5001:5001"
 
+    env_file:
+      - ./backend/.env
     environment:
-      - PORT=5001
-      - NODE_ENV=development
-
-      # DB
       - DB_SERVER=sqlserver
-      - DB_PORT=1433
-      - DB_NAME=TimesheetDB
-      - DB_USER=sa
-      - DB_PASSWORD=Bilal@1122
-
-      # JWT
-      - APP_JWT_SECRET=super-secure-dev-secret-change-in-production
-
-      # Microsoft Auth
-      - MS_CLIENT_ID=1ba6917a-f4c0-49ef-a189-7c57ffd79b50
-      - MS_TENANT_ID=8adc908e-9241-4552-8c21-c31d7f578a69
-      - MS_CLIENT_SECRET=ADD_YOUR_CLIENT_SECRET_HERE
-      - MS_REDIRECT_URI=http://localhost:5001/auth/microsoft/callback
-
-      # Frontend URL
-      - CLIENT_URL=http://localhost:5173
 
     depends_on:
       - mssql

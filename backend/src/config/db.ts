@@ -51,9 +51,60 @@ export const ensureSchema = async () => {
         email NVARCHAR(255) NOT NULL UNIQUE,
         passwordHash NVARCHAR(255) NULL,
         provider NVARCHAR(30) NOT NULL DEFAULT 'local',
-        microsoftOid NVARCHAR(120) NULL UNIQUE,
+        microsoftOid NVARCHAR(120) NULL,
         createdAt DATETIME NOT NULL DEFAULT GETDATE()
       )
+    END
+  `);
+
+  // Ensure microsoftOid is unique only when present.
+  // SQL Server unique constraints on nullable columns can reject multiple NULL rows.
+  await db.request().query(`
+    DECLARE @dropConstraintsSql NVARCHAR(MAX) = N'';
+
+    SELECT @dropConstraintsSql +=
+      N'ALTER TABLE dbo.Users DROP CONSTRAINT [' + kc.name + N'];'
+    FROM sys.key_constraints kc
+    INNER JOIN sys.index_columns ic ON ic.object_id = kc.parent_object_id AND ic.index_id = kc.unique_index_id
+    INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+    WHERE kc.[type] = 'UQ'
+      AND kc.parent_object_id = OBJECT_ID('dbo.Users')
+      AND c.name = 'microsoftOid';
+
+    IF LEN(@dropConstraintsSql) > 0
+      EXEC sp_executesql @dropConstraintsSql;
+  `);
+
+  await db.request().query(`
+    DECLARE @dropIndexesSql NVARCHAR(MAX) = N'';
+
+    SELECT @dropIndexesSql +=
+      N'DROP INDEX [' + i.name + N'] ON dbo.Users;'
+    FROM sys.indexes i
+    INNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+    INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+    WHERE i.object_id = OBJECT_ID('dbo.Users')
+      AND i.is_unique = 1
+      AND i.is_primary_key = 0
+      AND i.is_unique_constraint = 0
+      AND c.name = 'microsoftOid'
+      AND i.name <> 'UX_Users_MicrosoftOid_NotNull';
+
+    IF LEN(@dropIndexesSql) > 0
+      EXEC sp_executesql @dropIndexesSql;
+  `);
+
+  await db.request().query(`
+    IF NOT EXISTS (
+      SELECT 1
+      FROM sys.indexes
+      WHERE object_id = OBJECT_ID('dbo.Users')
+        AND name = 'UX_Users_MicrosoftOid_NotNull'
+    )
+    BEGIN
+      CREATE UNIQUE INDEX UX_Users_MicrosoftOid_NotNull
+      ON dbo.Users(microsoftOid)
+      WHERE microsoftOid IS NOT NULL;
     END
   `);
 

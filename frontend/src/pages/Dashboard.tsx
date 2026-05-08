@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const BASE_URL = "http://localhost:5001/timesheet";
+const BASE_URL = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5001"}/timesheet`;
 
 type DashboardProps = {
   token: string;

@@ -2,7 +2,7 @@ import { useMsal } from "@azure/msal-react";
 import { useState } from "react";
 import { loginRequest } from "../auth/authConfig";
 
-const API_BASE = "http://localhost:5001";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 
 type LoginProps = {
   onAuthSuccess: (

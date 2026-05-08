@@ -5,7 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import MainLayout from "./layout/MainLayout";
 
-const API_BASE = "http://localhost:5001";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
+const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || "http://localhost:5173";
 
 type AppUser = {
   id: number;
@@ -82,7 +83,7 @@ export default function App() {
       if (hasMicrosoftSession) {
         await instance.logoutRedirect({
           account: accounts[0],
-          postLogoutRedirectUri: "http://localhost:5173",
+          postLogoutRedirectUri: APP_ORIGIN,
         });
         return;
       }
