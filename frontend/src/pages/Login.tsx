@@ -1,6 +1,4 @@
-import { useMsal } from "@azure/msal-react";
 import { useState } from "react";
-import { loginRequest } from "../auth/authConfig";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 
@@ -9,11 +7,19 @@ type LoginProps = {
     token: string,
     user: { id: number; name: string; email: string; provider: "local" | "microsoft" },
   ) => void;
+  onMicrosoftLogin?: () => void | Promise<void>;
+  isMicrosoftLoading?: boolean;
+  msalEnabled?: boolean;
+  msalDisabledReason?: string;
 };
 
-export default function Login({ onAuthSuccess }: LoginProps) {
-  const { instance, inProgress } = useMsal();
-  const isLoading = inProgress !== "none";
+export default function Login({
+  onAuthSuccess,
+  onMicrosoftLogin,
+  isMicrosoftLoading = false,
+  msalEnabled = true,
+  msalDisabledReason,
+}: LoginProps) {
   const [mode, setMode] = useState<"landing" | "login" | "register">("landing");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,11 +29,17 @@ export default function Login({ onAuthSuccess }: LoginProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const handleLogin = async () => {
+    if (!msalEnabled || !onMicrosoftLogin) {
+      setError(msalDisabledReason || "Microsoft sign-in is not available in this environment.");
+      return;
+    }
+
     try {
-      // Redirect flow is more reliable for beginners and avoids nested popup errors.
-      await instance.loginRedirect(loginRequest);
+      await onMicrosoftLogin();
     } catch (error) {
       console.error("Login failed:", error);
+      const err = error as Error;
+      setError(err.message || "Microsoft sign-in failed.");
     }
   };
 
@@ -108,8 +120,8 @@ export default function Login({ onAuthSuccess }: LoginProps) {
 
           <p className="or-text">Or</p>
 
-          <button className="btn ms-btn" onClick={handleLogin} disabled={isLoading}>
-            {isLoading ? (
+          <button className="btn ms-btn" onClick={handleLogin} disabled={isMicrosoftLoading}>
+            {isMicrosoftLoading ? (
               "Please wait..."
             ) : (
               <>
@@ -123,6 +135,7 @@ export default function Login({ onAuthSuccess }: LoginProps) {
               </>
             )}
           </button>
+          {!msalEnabled && <p className="muted">{msalDisabledReason}</p>}
 
           {error && <p className="error-text">{error}</p>}
 
