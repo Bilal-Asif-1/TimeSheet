@@ -2,9 +2,9 @@ import type { Configuration, PopupRequest } from "@azure/msal-browser";
 
 export const msalConfig: Configuration = {
   auth: {
-    clientId: "YOUR_CLIENT_ID",
-    authority: "https://login.microsoftonline.com/YOUR_TENANT_ID",
-    redirectUri: "http://localhost:5173",
+    clientId: import.meta.env.VITE_MS_CLIENT_ID || "YOUR_CLIENT_ID",
+    authority: `https://login.microsoftonline.com/${import.meta.env.VITE_MS_TENANT_ID || "common"}`,
+    redirectUri: import.meta.env.VITE_MS_REDIRECT_URI || import.meta.env.VITE_APP_ORIGIN,
   },
 
   cache: {

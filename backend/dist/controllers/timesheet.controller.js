@@ -1,40 +1,11 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTimesheet = exports.updateTimesheet = exports.getTimesheets = exports.addTimesheet = void 0;
-const db_1 = __importStar(require("../config/db"));
+const db_1 = require("../config/db");
+/*
+// legacy mssql code (kept for rollback)
+import sql, { connectDB } from "../config/db";
+*/
 // CREATE
 const addTimesheet = async (req, res) => {
     try {
@@ -44,14 +15,11 @@ const addTimesheet = async (req, res) => {
         }
         const { task, hours } = req.body;
         const pool = await (0, db_1.connectDB)();
-        await pool
-            .request()
-            .input("task", db_1.default.VarChar, task)
-            .input("hours", db_1.default.Int, hours)
-            .input("userId", db_1.default.Int, appUser.userId).query(`
-        INSERT INTO Timesheets (task, hours, userId)
-        VALUES (@task, @hours, @userId)
-      `);
+        await pool.query(`INSERT INTO timesheets (task, hours, "userId") VALUES ($1, $2, $3)`, [
+            task,
+            Number(hours),
+            appUser.userId,
+        ]);
         res.status(200).json({ message: "Timesheet added successfully" });
     }
     catch (err) {
@@ -68,15 +36,11 @@ const getTimesheets = async (req, res) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const pool = await (0, db_1.connectDB)();
-        const result = await pool
-            .request()
-            .input("userId", db_1.default.Int, appUser.userId).query(`
-        SELECT id, task, hours, userId
-        FROM Timesheets
-        WHERE userId = @userId
-        ORDER BY id DESC
-      `);
-        res.json(result.recordset);
+        const result = await pool.query(`SELECT id, task, hours, "userId"
+       FROM timesheets
+       WHERE "userId" = $1
+       ORDER BY id DESC`, [appUser.userId]);
+        res.json(result.rows);
     }
     catch (err) {
         console.error("GET ERROR:", err);
@@ -93,16 +57,9 @@ const updateTimesheet = async (req, res) => {
         const { id } = req.params;
         const { task, hours } = req.body;
         const pool = await (0, db_1.connectDB)();
-        await pool
-            .request()
-            .input("id", db_1.default.Int, id)
-            .input("task", db_1.default.VarChar, task)
-            .input("hours", db_1.default.Int, hours)
-            .input("userId", db_1.default.Int, appUser.userId).query(`
-        UPDATE Timesheets
-        SET task = @task, hours = @hours
-        WHERE id = @id AND userId = @userId
-      `);
+        await pool.query(`UPDATE timesheets
+       SET task = $1, hours = $2
+       WHERE id = $3 AND "userId" = $4`, [task, Number(hours), Number(id), appUser.userId]);
         res.json({ message: "Timesheet updated" });
     }
     catch (err) {
@@ -119,13 +76,10 @@ const deleteTimesheet = async (req, res) => {
         }
         const { id } = req.params;
         const pool = await (0, db_1.connectDB)();
-        await pool
-            .request()
-            .input("id", db_1.default.Int, id)
-            .input("userId", db_1.default.Int, appUser.userId).query(`
-        DELETE FROM Timesheets
-        WHERE id = @id AND userId = @userId
-      `);
+        await pool.query(`DELETE FROM timesheets WHERE id = $1 AND "userId" = $2`, [
+            Number(id),
+            appUser.userId,
+        ]);
         res.json({ message: "Timesheet deleted" });
     }
     catch (err) {

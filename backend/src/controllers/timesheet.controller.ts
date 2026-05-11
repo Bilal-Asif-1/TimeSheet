@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
+import { connectDB } from "../config/db";
+
+/*
+// legacy mssql code (kept for rollback)
 import sql, { connectDB } from "../config/db";
+*/
 
 // CREATE
 export const addTimesheet = async (req: Request, res: Response) => {
@@ -13,14 +18,11 @@ export const addTimesheet = async (req: Request, res: Response) => {
 
     const pool = await connectDB();
 
-    await pool
-      .request()
-      .input("task", sql.VarChar, task)
-      .input("hours", sql.Int, hours)
-      .input("userId", sql.Int, appUser.userId).query(`
-        INSERT INTO Timesheets (task, hours, userId)
-        VALUES (@task, @hours, @userId)
-      `);
+    await pool.query(`INSERT INTO timesheets (task, hours, "userId") VALUES ($1, $2, $3)`, [
+      task,
+      Number(hours),
+      appUser.userId,
+    ]);
 
     res.status(200).json({ message: "Timesheet added successfully" });
   } catch (err: any) {
@@ -39,16 +41,15 @@ export const getTimesheets = async (req: Request, res: Response) => {
 
     const pool = await connectDB();
 
-    const result = await pool
-      .request()
-      .input("userId", sql.Int, appUser.userId).query(`
-        SELECT id, task, hours, userId
-        FROM Timesheets
-        WHERE userId = @userId
-        ORDER BY id DESC
-      `);
+    const result = await pool.query(
+      `SELECT id, task, hours, "userId"
+       FROM timesheets
+       WHERE "userId" = $1
+       ORDER BY id DESC`,
+      [appUser.userId],
+    );
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err: any) {
     console.error("GET ERROR:", err);
     res.status(500).json({ error: err.message });
@@ -67,16 +68,12 @@ export const updateTimesheet = async (req: Request, res: Response) => {
 
     const pool = await connectDB();
 
-    await pool
-      .request()
-      .input("id", sql.Int, id)
-      .input("task", sql.VarChar, task)
-      .input("hours", sql.Int, hours)
-      .input("userId", sql.Int, appUser.userId).query(`
-        UPDATE Timesheets
-        SET task = @task, hours = @hours
-        WHERE id = @id AND userId = @userId
-      `);
+    await pool.query(
+      `UPDATE timesheets
+       SET task = $1, hours = $2
+       WHERE id = $3 AND "userId" = $4`,
+      [task, Number(hours), Number(id), appUser.userId],
+    );
 
     res.json({ message: "Timesheet updated" });
   } catch (err: unknown) {
@@ -96,13 +93,10 @@ export const deleteTimesheet = async (req: Request, res: Response) => {
 
     const pool = await connectDB();
 
-    await pool
-      .request()
-      .input("id", sql.Int, id)
-      .input("userId", sql.Int, appUser.userId).query(`
-        DELETE FROM Timesheets
-        WHERE id = @id AND userId = @userId
-      `);
+    await pool.query(`DELETE FROM timesheets WHERE id = $1 AND "userId" = $2`, [
+      Number(id),
+      appUser.userId,
+    ]);
 
     res.json({ message: "Timesheet deleted" });
   } catch (err: unknown) {

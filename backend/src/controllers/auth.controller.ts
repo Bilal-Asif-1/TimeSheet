@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { connectDB } from "../config/db";
+
+/*
+// legacy mssql code (kept for rollback)
 import sql, { connectDB } from "../config/db";
+*/
 
 const issueAppToken = (payload: {
   userId: number;
@@ -29,28 +34,23 @@ export const register = async (req: Request, res: Response) => {
     const pool = await connectDB();
     const normalizedEmail = email.toLowerCase().trim();
 
-    const existing = await pool
-      .request()
-      .input("email", sql.NVarChar, normalizedEmail)
-      .query("SELECT TOP 1 id FROM Users WHERE email = @email");
+    const existing = await pool.query("SELECT id FROM users WHERE email = $1 LIMIT 1", [
+      normalizedEmail,
+    ]);
 
-    if (existing.recordset.length > 0) {
+    if (existing.rows.length > 0) {
       return res.status(409).json({ error: "Account already exists for this email." });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const inserted = await pool
-      .request()
-      .input("name", sql.NVarChar, name.trim())
-      .input("email", sql.NVarChar, normalizedEmail)
-      .input("passwordHash", sql.NVarChar, passwordHash)
-      .input("provider", sql.NVarChar, "local").query(`
-        INSERT INTO Users (name, email, passwordHash, provider)
-        OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.provider
-        VALUES (@name, @email, @passwordHash, @provider)
-      `);
+    const inserted = await pool.query(
+      `INSERT INTO users (name, email, "passwordHash", provider)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, email, provider`,
+      [name.trim(), normalizedEmail, passwordHash, "local"],
+    );
 
-    const user = inserted.recordset[0];
+    const user = inserted.rows[0];
     const token = issueAppToken({
       userId: user.id,
       email: user.email,
@@ -77,20 +77,19 @@ export const login = async (req: Request, res: Response) => {
     const pool = await connectDB();
     const normalizedEmail = email.toLowerCase().trim();
 
-    const result = await pool
-      .request()
-      .input("email", sql.NVarChar, normalizedEmail)
-      .query(`
-        SELECT TOP 1 id, name, email, passwordHash, provider
-        FROM Users
-        WHERE email = @email
-      `);
+    const result = await pool.query(
+      `SELECT id, name, email, "passwordHash", provider
+       FROM users
+       WHERE email = $1
+       LIMIT 1`,
+      [normalizedEmail],
+    );
 
-    if (result.recordset.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ error: "Invalid credentials." });
     }
 
-    const user = result.recordset[0];
+    const user = result.rows[0];
 
     if (!user.passwordHash) {
       return res
@@ -133,29 +132,23 @@ export const microsoftSync = async (req: Request, res: Response) => {
     }
 
     const pool = await connectDB();
-    const existing = await pool
-      .request()
-      .input("email", sql.NVarChar, email)
-      .input("oid", sql.NVarChar, oid)
-      .query(`
-        SELECT TOP 1 id, name, email, provider
-        FROM Users
-        WHERE email = @email OR microsoftOid = @oid
-      `);
+    const existing = await pool.query(
+      `SELECT id, name, email, provider
+       FROM users
+       WHERE email = $1 OR "microsoftOid" = $2
+       LIMIT 1`,
+      [email, oid],
+    );
 
-    let user = existing.recordset[0];
+    let user = existing.rows[0];
     if (!user) {
-      const inserted = await pool
-        .request()
-        .input("name", sql.NVarChar, name)
-        .input("email", sql.NVarChar, email)
-        .input("provider", sql.NVarChar, "microsoft")
-        .input("oid", sql.NVarChar, oid).query(`
-          INSERT INTO Users (name, email, provider, microsoftOid)
-          OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.provider
-          VALUES (@name, @email, @provider, @oid)
-        `);
-      user = inserted.recordset[0];
+      const inserted = await pool.query(
+        `INSERT INTO users (name, email, provider, "microsoftOid")
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, name, email, provider`,
+        [name, email, "microsoft", oid],
+      );
+      user = inserted.rows[0];
     }
 
     const token = issueAppToken({

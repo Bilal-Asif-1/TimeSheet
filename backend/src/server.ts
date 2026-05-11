@@ -6,10 +6,20 @@ import authRouter from "./routes/auth.routes";
 
 const app = express();
 const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+const allowedOrigins = clientUrl
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: clientUrl,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("CORS blocked for this origin."));
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   }),
@@ -22,6 +32,7 @@ app.use("/timesheet", timesheetRouter);
 app.use("/auth", authRouter);
 
 const PORT = process.env.PORT || 5001;
+const HOST = process.env.HOST || "0.0.0.0";
 
 const startServer = async () => {
   try {
@@ -32,8 +43,8 @@ const startServer = async () => {
     await ensureSchema();
 
     // 3. start server ONLY after DB is ready
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+    app.listen(Number(PORT), HOST, () => {
+      console.log(`🚀 Server running on ${HOST}:${PORT}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);

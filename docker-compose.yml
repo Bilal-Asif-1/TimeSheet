@@ -1,17 +1,37 @@
 services:
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
+  # legacy mssql code (kept for rollback)
+  # mssql:
+  #   image: mcr.microsoft.com/mssql/server:2022-latest
+  #   container_name: sqlserver
+  #   environment:
+  #     ACCEPT_EULA: "Y"
+  #     SA_PASSWORD: "Bilal@1122"
+  #   ports:
+  #     - "1433:1433"
+  #   volumes:
+  #     - mssql_data:/var/opt/mssql
+  #   restart: always
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
 
     environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "Bilal@1122"
+      POSTGRES_DB: timesheet
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
 
     ports:
-      - "1433:1433"
+      - "5432:5432"
 
     volumes:
-      - mssql_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d timesheet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
     restart: always
 
@@ -25,11 +45,9 @@ services:
     env_file:
       - ./backend/.env
 
-    environment:
-      DB_SERVER: sqlserver
-
     depends_on:
-      - mssql
+      postgres:
+        condition: service_healthy
 
     restart: always
 
@@ -46,4 +64,4 @@ services:
     restart: always
 
 volumes:
-  mssql_data:
+  postgres_data:

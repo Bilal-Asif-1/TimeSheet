@@ -4,24 +4,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ensureSchema = exports.connectDB = void 0;
-const mssql_1 = __importDefault(require("mssql"));
+const pg_1 = require("pg");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+/*
+// legacy mssql code (kept for rollback)
+import sql from "mssql";
+const config: sql.config = {
+  user: process.env.DB_USER!,
+  password: process.env.DB_PASSWORD!,
+  server: process.env.DB_SERVER!,
+  database: process.env.DB_NAME!,
+  options: {
+    encrypt: false,
+    trustServerCertificate: true,
+  },
+};
+*/
 const config = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
-    database: process.env.DB_NAME,
-    options: {
-        encrypt: false,
-        trustServerCertificate: true,
-    },
+    host: process.env.DB_HOST || "postgres",
+    port: Number(process.env.DB_PORT || 5432),
+    user: process.env.DB_USER || "appuser",
+    password: process.env.DB_PASSWORD || "apppass",
+    database: process.env.DB_NAME || "timesheet",
 };
 let pool = null;
-const connectWithRetry = async (retries = 5) => {
+const connectWithRetry = async (retries = 10) => {
     try {
-        pool = await mssql_1.default.connect(config);
-        console.log("✅ MSSQL Connected");
+        pool = new pg_1.Pool(config);
+        await pool.query("SELECT 1");
+        console.log("✅ PostgreSQL Connected");
         return pool;
     }
     catch (err) {
@@ -42,86 +54,38 @@ exports.connectDB = connectDB;
 // optional but recommended
 const ensureSchema = async () => {
     const db = await (0, exports.connectDB)();
+    /*
+    // legacy mssql code (kept for rollback)
     await db.request().query(`
-    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users')
-    BEGIN
-      CREATE TABLE Users (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        name NVARCHAR(120) NOT NULL,
-        email NVARCHAR(255) NOT NULL UNIQUE,
-        passwordHash NVARCHAR(255) NULL,
-        provider NVARCHAR(30) NOT NULL DEFAULT 'local',
-        microsoftOid NVARCHAR(120) NULL,
-        createdAt DATETIME NOT NULL DEFAULT GETDATE()
-      )
-    END
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users')
+      BEGIN
+        CREATE TABLE Users (...)
+      END
+    `);
+    */
+    await db.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      "passwordHash" VARCHAR(255),
+      provider VARCHAR(30) NOT NULL DEFAULT 'local',
+      "microsoftOid" VARCHAR(120),
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
-    // Ensure microsoftOid is unique only when present.
-    // SQL Server unique constraints on nullable columns can reject multiple NULL rows.
-    await db.request().query(`
-    DECLARE @dropConstraintsSql NVARCHAR(MAX) = N'';
-
-    SELECT @dropConstraintsSql +=
-      N'ALTER TABLE dbo.Users DROP CONSTRAINT [' + kc.name + N'];'
-    FROM sys.key_constraints kc
-    INNER JOIN sys.index_columns ic ON ic.object_id = kc.parent_object_id AND ic.index_id = kc.unique_index_id
-    INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
-    WHERE kc.[type] = 'UQ'
-      AND kc.parent_object_id = OBJECT_ID('dbo.Users')
-      AND c.name = 'microsoftOid';
-
-    IF LEN(@dropConstraintsSql) > 0
-      EXEC sp_executesql @dropConstraintsSql;
+    await db.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_users_microsoftoid_not_null
+    ON users ("microsoftOid")
+    WHERE "microsoftOid" IS NOT NULL;
   `);
-    await db.request().query(`
-    DECLARE @dropIndexesSql NVARCHAR(MAX) = N'';
-
-    SELECT @dropIndexesSql +=
-      N'DROP INDEX [' + i.name + N'] ON dbo.Users;'
-    FROM sys.indexes i
-    INNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
-    INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
-    WHERE i.object_id = OBJECT_ID('dbo.Users')
-      AND i.is_unique = 1
-      AND i.is_primary_key = 0
-      AND i.is_unique_constraint = 0
-      AND c.name = 'microsoftOid'
-      AND i.name <> 'UX_Users_MicrosoftOid_NotNull';
-
-    IF LEN(@dropIndexesSql) > 0
-      EXEC sp_executesql @dropIndexesSql;
-  `);
-    await db.request().query(`
-    IF NOT EXISTS (
-      SELECT 1
-      FROM sys.indexes
-      WHERE object_id = OBJECT_ID('dbo.Users')
-        AND name = 'UX_Users_MicrosoftOid_NotNull'
-    )
-    BEGIN
-      CREATE UNIQUE INDEX UX_Users_MicrosoftOid_NotNull
-      ON dbo.Users(microsoftOid)
-      WHERE microsoftOid IS NOT NULL;
-    END
-  `);
-    await db.request().query(`
-    IF COL_LENGTH('Timesheets', 'userId') IS NULL
-    BEGIN
-      ALTER TABLE Timesheets ADD userId INT NULL;
-    END
-  `);
-    await db.request().query(`
-    IF NOT EXISTS (
-      SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-      WHERE TABLE_NAME = 'Timesheets'
-      AND CONSTRAINT_NAME = 'FK_Timesheets_Users_userId'
-    )
-    BEGIN
-      ALTER TABLE Timesheets
-      ADD CONSTRAINT FK_Timesheets_Users_userId
-      FOREIGN KEY (userId) REFERENCES Users(id);
-    END
+    await db.query(`
+    CREATE TABLE IF NOT EXISTS timesheets (
+      id SERIAL PRIMARY KEY,
+      task VARCHAR(255) NOT NULL,
+      hours INTEGER NOT NULL,
+      "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 };
 exports.ensureSchema = ensureSchema;
-exports.default = mssql_1.default;
