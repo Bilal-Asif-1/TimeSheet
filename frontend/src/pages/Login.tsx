@@ -119,24 +119,29 @@ export default function Login({
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <p className="or-text">Or</p>
+          {msalEnabled ? (
+            <>
+              <p className="or-text">Or</p>
 
-          <button className="btn ms-btn" onClick={handleLogin} disabled={isMicrosoftLoading}>
-            {isMicrosoftLoading ? (
-              "Please wait..."
-            ) : (
-              <>
-                <span className="ms-logo" aria-hidden="true">
-                  <span className="ms-tile ms-red" />
-                  <span className="ms-tile ms-green" />
-                  <span className="ms-tile ms-blue" />
-                  <span className="ms-tile ms-yellow" />
-                </span>
-                <span>Sign in with Microsoft</span>
-              </>
-            )}
-          </button>
-          {!msalEnabled && <p className="muted">{msalDisabledReason}</p>}
+              <button className="btn ms-btn" onClick={handleLogin} disabled={isMicrosoftLoading}>
+                {isMicrosoftLoading ? (
+                  "Please wait..."
+                ) : (
+                  <>
+                    <span className="ms-logo" aria-hidden="true">
+                      <span className="ms-tile ms-red" />
+                      <span className="ms-tile ms-green" />
+                      <span className="ms-tile ms-blue" />
+                      <span className="ms-tile ms-yellow" />
+                    </span>
+                    <span>Sign in with Microsoft</span>
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            msalDisabledReason && <p className="muted">{msalDisabledReason}</p>
+          )}
 
           {error && <p className="error-text">{error}</p>}
 

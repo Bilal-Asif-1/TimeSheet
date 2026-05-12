@@ -44,9 +44,7 @@ function buildAllowedOriginKeys(): Set<string> {
     }
   };
 
-  // Production frontend + common dev hosts (normalized keys).
-  addCsv("http://18.232.85.119");
-  addCsv("http://18.232.85.119:80");
+  // Local Vite dev (normalized keys). Production/staging: set CLIENT_URL and/or CORS_ORIGINS (e.g. via docker-compose).
   addCsv("http://localhost:5173");
   addCsv("http://127.0.0.1:5173");
 
@@ -74,10 +72,13 @@ const corsOptions: CorsOptions = {
       callback(null, origin);
       return;
     }
+    console.warn(
+      `[cors] Blocked preflight/request — Origin=${JSON.stringify(origin)} canonical=${JSON.stringify(key)} allowed=${JSON.stringify([...allowedOriginKeys].sort())}`,
+    );
     callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
   credentials: true,
   optionsSuccessStatus: 204,
   maxAge: 86400,
