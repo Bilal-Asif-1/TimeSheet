@@ -7,38 +7,70 @@ import authRouter from "./routes/auth.routes";
 
 const app = express();
 
-/** Browser origins allowed for credentialed requests (never use "*" here). */
-function getAllowedOrigins(): Set<string> {
-  const set = new Set<string>();
+/** Canonical form so `http://host` and `http://host:80` match the same allowlist entry. */
+function canonicalOrigin(origin: string): string {
+  const trimmed = origin.trim();
+  try {
+    const u = new URL(trimmed);
+    const protocol = u.protocol.toLowerCase();
+    const host = u.hostname.toLowerCase();
+    const port = u.port;
+
+    const defaultPort = protocol === "https:" ? "443" : "80";
+    const effectivePort = port || defaultPort;
+
+    if (effectivePort === defaultPort) {
+      return `${protocol}//${host}`;
+    }
+    return `${protocol}//${host}:${effectivePort}`;
+  } catch {
+    return trimmed;
+  }
+}
+
+/**
+ * Allowed browser origins for credentialed CORS (never "*" with credentials).
+ * Defaults always merged with env so production IP is not dropped when CORS_ORIGINS is set.
+ */
+function buildAllowedOriginKeys(): Set<string> {
+  const keys = new Set<string>();
+
   const addCsv = (raw?: string) => {
     if (!raw) return;
     for (const part of raw.split(",")) {
       const o = part.trim();
-      if (o.length > 0 && o !== "*") set.add(o);
+      if (!o || o === "*") continue;
+      keys.add(canonicalOrigin(o));
     }
   };
 
-  if (process.env.CORS_ORIGINS) {
-    addCsv(process.env.CORS_ORIGINS);
-  } else {
-    addCsv("http://18.232.85.119,http://localhost:5173");
-    addCsv(process.env.CLIENT_URL);
-  }
+  // Production frontend + common dev hosts (normalized keys).
+  addCsv("http://18.232.85.119");
+  addCsv("http://18.232.85.119:80");
+  addCsv("http://localhost:5173");
+  addCsv("http://127.0.0.1:5173");
 
-  return set;
+  addCsv(process.env.CORS_ORIGINS);
+  addCsv(process.env.CLIENT_URL);
+
+  return keys;
 }
 
-const allowedOrigins = getAllowedOrigins();
+const allowedOriginKeys = buildAllowedOriginKeys();
+console.info(
+  `[cors] Allowed origins (${allowedOriginKeys.size}): ${[...allowedOriginKeys].sort().join(", ")}`,
+);
 
 const corsOptions: CorsOptions = {
   origin(origin, callback) {
-    // Same-origin requests, curl, server-to-server, or some tools omit Origin.
+    // Postman, curl, server-to-server — no Origin header.
     if (!origin) {
       callback(null, true);
       return;
     }
-    if (allowedOrigins.has(origin)) {
-      // With credentials: reflect the exact origin string (required; no wildcard).
+    const key = canonicalOrigin(origin);
+    if (allowedOriginKeys.has(key)) {
+      // Reflect the browser's Origin value (required when credentials: true; no wildcard).
       callback(null, origin);
       return;
     }
@@ -48,6 +80,7 @@ const corsOptions: CorsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
   optionsSuccessStatus: 204,
+  maxAge: 86400,
 };
 
 app.use(cors(corsOptions));
