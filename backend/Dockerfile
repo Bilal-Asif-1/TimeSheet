@@ -1,23 +1,25 @@
-# Use Node image
-FROM node:22
+# Build stage
+FROM node:22 AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy rest of code
 COPY . .
-
-# Build TS → JS
 RUN npm run build
 
-# Expose port
+
+# Production stage
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --only=production
+
+COPY --from=builder /app/dist ./dist
+
 EXPOSE 5001
 
-# Start server
 CMD ["node", "dist/server.js"]

@@ -1,20 +1,8 @@
 services:
-  # legacy mssql code (kept for rollback)
-  # mssql:
-  #   image: mcr.microsoft.com/mssql/server:2022-latest
-  #   container_name: sqlserver
-  #   environment:
-  #     ACCEPT_EULA: "Y"
-  #     SA_PASSWORD: "Bilal@1122"
-  #   ports:
-  #     - "1433:1433"
-  #   volumes:
-  #     - mssql_data:/var/opt/mssql
-  #   restart: always
-
   postgres:
     image: postgres:16
     container_name: postgres
+    restart: always
 
     environment:
       POSTGRES_DB: timesheet
@@ -31,13 +19,15 @@ services:
       test: ["CMD-SHELL", "pg_isready -U appuser -d timesheet"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-    restart: always
+    networks:
+      - app-network
 
   backend:
     build: ./backend
     container_name: backend
+    restart: always
 
     ports:
       - "5001:5001"
@@ -49,19 +39,26 @@ services:
       postgres:
         condition: service_healthy
 
-    restart: always
+    networks:
+      - app-network
 
   frontend:
     build: ./frontend
     container_name: frontend
+    restart: always
 
     ports:
-      - "5173:80"
+      - "80:80"
 
     depends_on:
       - backend
 
-    restart: always
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
