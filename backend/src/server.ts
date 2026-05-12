@@ -75,7 +75,9 @@ const corsOptions: CorsOptions = {
     console.warn(
       `[cors] Blocked preflight/request — Origin=${JSON.stringify(origin)} canonical=${JSON.stringify(key)} allowed=${JSON.stringify([...allowedOriginKeys].sort())}`,
     );
-    callback(new Error(`CORS blocked for origin: ${origin}`));
+    // Important: never pass an Error here — `cors` forwards it to `next(err)` and Express returns 500
+    // with no CORS headers, which browsers report as a failed preflight.
+    callback(null, false);
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],

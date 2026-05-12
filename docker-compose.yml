@@ -38,6 +38,8 @@ services:
     # Overrides backend/.env for browser Origin / redirects. Set in repo-root `.env` or use defaults below.
     environment:
       CLIENT_URL: ${CLIENT_URL:-http://18.232.85.119}
+      # Extra allowlist (merged in server). Ensures EC2 UI origin works even if backend/.env still has placeholders.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://18.232.85.119,http://18.232.85.119:80}
 
     depends_on:
       postgres:
