@@ -4,9 +4,10 @@ import { loginRequest, msalDisabledReason } from "./auth/authConfig";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import MainLayout from "./layout/MainLayout";
+import { getApiBaseUrl, getAppOrigin } from "./config/env";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
-const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || "http://localhost:5173";
+const API_BASE = getApiBaseUrl();
+const APP_ORIGIN = getAppOrigin();
 
 type AppUser = {
   id: number;

@@ -1,7 +1,8 @@
 import { PublicClientApplication } from "@azure/msal-browser";
 import type { RedirectRequest } from "@azure/msal-browser";
+import { getAppOrigin } from "../config/env";
 
-const appOrigin = import.meta.env.VITE_APP_ORIGIN || window.location.origin;
+const appOrigin = getAppOrigin();
 const isLocalhost =
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 const supportsSecureCrypto = window.isSecureContext || isLocalhost;
