@@ -24,7 +24,9 @@ function normalizeBaseUrl(url: string): string {
   }
 
   const host = parsed.hostname.toLowerCase();
-  if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") {
+  const isLocalHost =
+    host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0";
+  if (isLocalHost && !import.meta.env.DEV) {
     throw new Error(
       `[config] VITE_API_BASE_URL points at "${parsed.hostname}", which will not work for browser clients in production. Use your EC2 public IP (or a reverse-proxy path) and rebuild.`,
     );
