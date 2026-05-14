@@ -24,7 +24,22 @@ export default function Dashboard({ token, user }: DashboardProps) {
         Authorization: `Bearer ${token}`,
       },
     });
-    setData(await res.json());
+
+    const payload = await res.json();
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("appToken");
+        localStorage.removeItem("appUser");
+        window.location.reload();
+        return;
+      }
+
+      console.error("Failed to load timesheets:", payload);
+      setData([]);
+      return;
+    }
+
+    setData(Array.isArray(payload) ? payload : []);
   };
 
   useEffect(() => {
