@@ -5,12 +5,12 @@ services:
     restart: always
 
     environment:
-      POSTGRES_DB: timesheet
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: apppass
+      POSTGRES_DB: ${POSTGRES_DB:-timesheet}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apppass}
 
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -37,9 +37,16 @@ services:
 
     # Overrides backend/.env for browser Origin / redirects. Set in repo-root `.env` or use defaults below.
     environment:
-      CLIENT_URL: ${CLIENT_URL:-http://18.232.85.119}
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-timesheet}
+      DB_USER: ${POSTGRES_USER:-appuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-apppass}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost}
+      MS_REDIRECT_URI: ${MS_REDIRECT_URI:-http://localhost}
       # Extra allowlist (merged in server). Ensures EC2 UI origin works even if backend/.env still has placeholders.
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://18.232.85.119,http://18.232.85.119:80}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80,http://127.0.0.1,http://127.0.0.1:80}
 
     depends_on:
       postgres:
@@ -53,9 +60,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://18.232.85.119:5001}
-        VITE_APP_ORIGIN: ${VITE_APP_ORIGIN:-http://18.232.85.119}
-        VITE_AUTH_MODE: ${VITE_AUTH_MODE:-local-only}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5001}
+        VITE_APP_ORIGIN: ${VITE_APP_ORIGIN:-http://localhost}
+        VITE_AUTH_MODE: ${VITE_AUTH_MODE:-microsoft}
+        VITE_MS_CLIENT_ID: ${VITE_MS_CLIENT_ID:-1ba6917a-f4c0-49ef-a189-7c57ffd79b50}
+        VITE_MS_TENANT_ID: ${VITE_MS_TENANT_ID:-common}
+        VITE_MS_REDIRECT_URI: ${VITE_MS_REDIRECT_URI:-http://localhost}
     container_name: frontend
     restart: always
 
