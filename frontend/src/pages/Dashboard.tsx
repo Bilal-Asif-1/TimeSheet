@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import { getApiBaseUrl } from "../config/env";
 
-const BASE_URL = `${getApiBaseUrl()}/timesheet`;
+const API_BASE = getApiBaseUrl();
+const BASE_URL = `${API_BASE}/timesheet`;
 
 type DashboardProps = {
   token: string;
-  user: { id: number; name: string; email: string; provider: "local" | "microsoft" };
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    provider: "local" | "microsoft";
+    organizationCode?: string | null;
+    role?: string | null;
+    department?: string | null;
+  };
 };
 
 export default function Dashboard({ token, user }: DashboardProps) {
@@ -17,6 +26,11 @@ export default function Dashboard({ token, user }: DashboardProps) {
   const [editTask, setEditTask] = useState("");
   const [editHours, setEditHours] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [joinOrgId, setJoinOrgId] = useState("");
+  const [joinDepartment, setJoinDepartment] = useState(user.department || "");
+  const [joinError, setJoinError] = useState("");
+  const [joinSuccess, setJoinSuccess] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
 
   const load = async () => {
     const res = await fetch(BASE_URL, {
@@ -102,6 +116,45 @@ export default function Dashboard({ token, user }: DashboardProps) {
     setIsSaving(false);
   };
 
+  const joinOrganization = async () => {
+    if (!joinOrgId.trim()) {
+      setJoinError("Organization ID is required.");
+      return;
+    }
+
+    try {
+      setJoinError("");
+      setJoinSuccess("");
+      setIsJoining(true);
+      const response = await fetch(`${API_BASE}/auth/join-organization`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          organizationId: joinOrgId,
+          department: joinDepartment,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to join organization.");
+      }
+
+      localStorage.setItem("appToken", payload.token);
+      localStorage.setItem("appUser", JSON.stringify(payload.user));
+      setJoinSuccess(`Joined ${payload.user.organizationCode}. Refreshing workspace...`);
+      window.setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      const err = error as Error;
+      setJoinError(err.message);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   const totalHours = data.reduce((sum, item) => sum + Number(item.hours || 0), 0);
 
   return (
@@ -114,6 +167,37 @@ export default function Dashboard({ token, user }: DashboardProps) {
         <div className="pill">
           Total hours: <strong>{totalHours}</strong>
         </div>
+      </div>
+
+      <div className="card workspace-join-card">
+        <div>
+          <p className="eyebrow">Workspace</p>
+          <h2>{user.organizationCode ? `Organization ${user.organizationCode}` : "Join an organization"}</h2>
+          <p className="muted">
+            {user.organizationCode
+              ? `Role: ${user.role || "employee"}${user.department ? ` - ${user.department}` : ""}`
+              : "Enter an Organization ID after login to connect this user account to a company workspace."}
+          </p>
+        </div>
+        <div className="join-org-controls">
+          <input
+            className="input"
+            placeholder="ORG-X82KLM"
+            value={joinOrgId}
+            onChange={(event) => setJoinOrgId(event.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="Department"
+            value={joinDepartment}
+            onChange={(event) => setJoinDepartment(event.target.value)}
+          />
+          <button className="btn btn-secondary" onClick={joinOrganization} disabled={isJoining}>
+            {isJoining ? "Joining..." : user.organizationCode ? "Switch Organization" : "Join Organization"}
+          </button>
+        </div>
+        {joinError && <p className="error-text">{joinError}</p>}
+        {joinSuccess && <p className="success-text">{joinSuccess}</p>}
       </div>
 
       <div className="card add-form">

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.microsoftSync = exports.login = exports.register = void 0;
+exports.joinOrganization = exports.microsoftSync = exports.login = exports.register = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_1 = require("../config/db");
@@ -200,3 +200,49 @@ const microsoftSync = async (req, res) => {
     }
 };
 exports.microsoftSync = microsoftSync;
+// Links the currently logged-in user to an existing organization workspace.
+const joinOrganization = async (req, res) => {
+    try {
+        const appUser = req.appUser;
+        if (!appUser?.userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const { organizationId, department } = req.body;
+        if (!organizationId?.trim()) {
+            return res.status(400).json({ error: "Organization ID is required." });
+        }
+        const pool = await (0, db_1.connectDB)();
+        const orgResult = await pool.query(`SELECT id, "orgCode"
+       FROM organizations
+       WHERE UPPER("orgCode") = UPPER($1)
+       LIMIT 1`, [organizationId.trim()]);
+        if (orgResult.rows.length === 0) {
+            return res.status(404).json({ error: "Organization ID was not found." });
+        }
+        const organization = orgResult.rows[0];
+        const updated = await pool.query(`UPDATE users
+       SET "organizationId" = $1,
+           "organizationCode" = $2,
+           role = CASE WHEN role = 'ceo' THEN role ELSE 'employee' END,
+           department = COALESCE($3, department)
+       WHERE id = $4
+       RETURNING id, name, email, provider, "organizationId", "organizationCode", role, department`, [organization.id, organization.orgCode, department?.trim() || null, appUser.userId]);
+        const user = updated.rows[0];
+        const token = issueAppToken({
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            provider: user.provider,
+            organizationId: user.organizationId,
+            organizationCode: user.organizationCode,
+            role: user.role,
+            department: user.department,
+        });
+        return res.json({ token, user });
+    }
+    catch (error) {
+        const err = error;
+        return res.status(500).json({ error: err.message });
+    }
+};
+exports.joinOrganization = joinOrganization;

@@ -56,7 +56,7 @@ export default function Login({
       case "startOrg":
         return {
           eyebrow: "Workspace setup",
-          title: "Start your FlowTrack organization",
+          title: "Start your TimeSheet organization",
           subtitle: "Create a secure workspace for teams, departments, roles, and timesheets.",
           primary: "Create organization",
         };
@@ -71,21 +71,21 @@ export default function Login({
         return {
           eyebrow: "Employee access",
           title: "Login as User",
-          subtitle: "Enter your Organization ID to access your company workspace.",
+          subtitle: "Use your personal account to enter TimeSheet, then join a workspace from the dashboard.",
           primary: "Log In",
         };
       case "joinOrg":
         return {
-          eyebrow: "Employee onboarding",
-          title: "Join an organization",
-          subtitle: "Use your Organization ID to create your employee account.",
-          primary: "Join Workspace",
+          eyebrow: "Employee registration",
+          title: "Register as User",
+          subtitle: "Create your employee account first. You can join an organization after login.",
+          primary: "Register",
         };
       default:
         return {
-          eyebrow: "Enterprise time operations",
-          title: "FlowTrack",
-          subtitle: "A multi-tenant workspace for teams, departments, timesheets, and approvals.",
+          eyebrow: "Enterprise operations suite",
+          title: "Enterprise Workflow & Time Management Platform",
+          subtitle: "Manage teams, projects, workflows and productivity in one centralized workspace.",
           primary: "Get started",
         };
     }
@@ -127,12 +127,16 @@ export default function Login({
         throw new Error("Organization name, company email and password are required.");
       }
 
-      if (isLoginView && (!organizationId.trim() || !email.trim() || !password.trim())) {
+      if (view === "orgLogin" && (!organizationId.trim() || !email.trim() || !password.trim())) {
         throw new Error("Organization ID, email and password are required.");
       }
 
-      if (isJoinOrg && (!organizationId.trim() || !name.trim() || !email.trim() || !password.trim())) {
-        throw new Error("Organization ID, full name, work email and password are required.");
+      if (view === "userLogin" && (!email.trim() || !password.trim())) {
+        throw new Error("Email and password are required.");
+      }
+
+      if (isJoinOrg && (!name.trim() || !email.trim() || !password.trim())) {
+        throw new Error("Full name, work email and password are required.");
       }
 
       const endpoint = isLoginView ? "login" : "register";
@@ -142,7 +146,7 @@ export default function Login({
         body: JSON.stringify(
           isStartOrg
             ? {
-                name: `${organizationName || "FlowTrack"} Owner`,
+                name: `${organizationName || "TimeSheet"} Owner`,
                 email,
                 password,
                 organizationName,
@@ -154,13 +158,12 @@ export default function Login({
                   name,
                   email,
                   password,
-                  organizationId,
                   department,
                 }
               : {
                   email,
                   password,
-                  organizationId,
+                  organizationId: view === "orgLogin" ? organizationId : undefined,
                 },
         ),
       });
@@ -187,66 +190,104 @@ export default function Login({
 
   if (view === "landing") {
     return (
-      <div className="flow-auth-shell">
+      <div className="flow-auth-shell timesheet-landing-shell">
         <header className="flow-nav">
           <button className="brand-mark" type="button" onClick={() => switchView("landing")}>
-            <span className="brand-icon">F</span>
-            <span>FlowTrack</span>
+            <span className="brand-icon">T</span>
+            <span>TimeSheet</span>
           </button>
+          <nav className="flow-nav-center" aria-label="Product navigation">
+            <button className="nav-link" type="button">Features</button>
+            <button className="nav-link" type="button">Solutions</button>
+            <button className="nav-link" type="button">Pricing</button>
+          </nav>
           <div className="flow-nav-actions">
-            <button className="nav-link" type="button" onClick={() => switchView("orgLogin")}>
-              Organization login
-            </button>
-            <button className="nav-link" type="button" onClick={() => switchView("userLogin")}>
-              User login
-            </button>
+            <button className="nav-link" type="button">Contact</button>
+            <button className="nav-link" type="button">About</button>
           </div>
         </header>
 
-        <main className="flow-landing">
-          <section className="hero-copy">
-            <p className="flow-eyebrow">{viewCopy.eyebrow}</p>
-            <h1>{viewCopy.title}</h1>
-            <p className="hero-text">{viewCopy.subtitle}</p>
-            <div className="hero-actions">
-              <button className="btn btn-primary" type="button" onClick={() => switchView("startOrg")}>
-                Start Organization
-              </button>
-              <button className="btn btn-ghost" type="button" onClick={() => switchView("orgLogin")}>
-                Login as Organization
-              </button>
-              <button className="btn btn-secondary" type="button" onClick={() => switchView("userLogin")}>
-                Login as User
-              </button>
+        <main className="timesheet-landing">
+          <section className="timesheet-hero">
+            <div className="hero-copy">
+              <p className="flow-eyebrow">{viewCopy.eyebrow}</p>
+              <h1>{viewCopy.title}</h1>
+              <p className="hero-text">{viewCopy.subtitle}</p>
+              <div className="hero-actions">
+                <div className="hero-auth-action">
+                  <button className="btn btn-primary" type="button" onClick={() => switchView("orgLogin")}>
+                    Login as Organization
+                  </button>
+                  <button className="hero-helper-link" type="button" onClick={() => switchView("startOrg")}>
+                    Don&apos;t have one? Create now
+                  </button>
+                </div>
+                <div className="hero-auth-action">
+                  <button className="btn btn-ghost" type="button" onClick={() => switchView("userLogin")}>
+                    Login as Employee
+                  </button>
+                  <button className="hero-helper-link" type="button" onClick={() => switchView("joinOrg")}>
+                    New here? Register now
+                  </button>
+                </div>
+              </div>
             </div>
-          </section>
 
-          <section className="product-preview" aria-label="FlowTrack dashboard preview">
-            <div className="preview-toolbar">
-              <span />
-              <span />
-              <span />
-              <strong>Workspace command center</strong>
-            </div>
-            <div className="preview-grid">
-              <div className="metric-panel">
-                <p>Departments</p>
-                <strong>08</strong>
+            <section className="product-preview timesheet-preview" aria-label="TimeSheet dashboard preview">
+              <div className="preview-toolbar">
+                <span />
+                <span />
+                <span />
+                <strong>Operations dashboard</strong>
               </div>
-              <div className="metric-panel">
-                <p>Approval queue</p>
-                <strong>24</strong>
+              <div className="preview-grid">
+                <div className="metric-panel">
+                  <p>Active projects</p>
+                  <strong>42</strong>
+                </div>
+                <div className="metric-panel">
+                  <p>Workflow queue</p>
+                  <strong>18</strong>
+                </div>
+                <div className="metric-panel">
+                  <p>Tracked hours</p>
+                  <strong>1,284</strong>
+                </div>
               </div>
-              <div className="metric-panel">
-                <p>Billable hours</p>
-                <strong>1,284</strong>
+              <div className="kanban-preview" aria-hidden="true">
+                <div>
+                  <p>Backlog</p>
+                  <span />
+                  <span />
+                </div>
+                <div>
+                  <p>In progress</p>
+                  <span />
+                  <span />
+                </div>
+                <div>
+                  <p>Review</p>
+                  <span />
+                  <span />
+                </div>
               </div>
-            </div>
-            <div className="timeline-panel">
-              <div className="timeline-row wide" />
-              <div className="timeline-row medium" />
-              <div className="timeline-row short" />
-            </div>
+              <div className="activity-preview" aria-hidden="true">
+                <div className="activity-bars">
+                  <span style={{ height: "42%" }} />
+                  <span style={{ height: "72%" }} />
+                  <span style={{ height: "58%" }} />
+                  <span style={{ height: "86%" }} />
+                  <span style={{ height: "64%" }} />
+                </div>
+                <div className="workflow-nodes">
+                  <span>Plan</span>
+                  <i />
+                  <span>Track</span>
+                  <i />
+                  <span>Approve</span>
+                </div>
+              </div>
+            </section>
           </section>
         </main>
       </div>
@@ -257,8 +298,8 @@ export default function Login({
     <div className="flow-auth-shell">
       <header className="flow-nav">
         <button className="brand-mark" type="button" onClick={() => switchView("landing")}>
-          <span className="brand-icon">F</span>
-          <span>FlowTrack</span>
+          <span className="brand-icon">T</span>
+          <span>TimeSheet</span>
         </button>
         <button className="nav-link" type="button" onClick={() => switchView("landing")}>
           Back to overview
@@ -266,56 +307,7 @@ export default function Login({
       </header>
 
       <main className="auth-experience">
-        <section className="workspace-visual" aria-label="Workspace illustration">
-          <p className="flow-eyebrow">Multi-tenant SaaS</p>
-          <h2>One workspace for every team, role, and approval path.</h2>
-          <div className="org-map">
-            <div className="org-node primary">CEO</div>
-            <div className="org-branch">
-              <span>Engineering</span>
-              <span>Finance</span>
-              <span>Operations</span>
-            </div>
-            <div className="access-row">
-              <span>RBAC ready</span>
-              <span>Departments</span>
-              <span>JWT sessions</span>
-            </div>
-          </div>
-        </section>
-
         <section className="auth-card-pro">
-          <div className="auth-mode-tabs" aria-label="FlowTrack authentication pages">
-            <button
-              type="button"
-              className={view === "orgLogin" ? "active" : ""}
-              onClick={() => switchView("orgLogin")}
-            >
-              Organization Login
-            </button>
-            <button
-              type="button"
-              className={view === "userLogin" ? "active" : ""}
-              onClick={() => switchView("userLogin")}
-            >
-              User Login
-            </button>
-            <button
-              type="button"
-              className={view === "startOrg" ? "active" : ""}
-              onClick={() => switchView("startOrg")}
-            >
-              Start Organization
-            </button>
-            <button
-              type="button"
-              className={view === "joinOrg" ? "active" : ""}
-              onClick={() => switchView("joinOrg")}
-            >
-              Join
-            </button>
-          </div>
-
           <div className="progress-steps" aria-label="Authentication flow steps">
             <span className="active" />
             <span className={view === "startOrg" || view === "joinOrg" ? "active" : ""} />
@@ -378,7 +370,7 @@ export default function Login({
               </>
             )}
 
-            {isLoginView && (
+            {view === "orgLogin" && (
               <>
                 <Field label="Organization ID">
                   <input
@@ -388,6 +380,11 @@ export default function Login({
                     placeholder="ORG-X82KLM"
                   />
                 </Field>
+              </>
+            )}
+
+            {isLoginView && (
+              <>
                 <Field label="Username or Email Address">
                   <input
                     className="auth-input"
@@ -411,14 +408,6 @@ export default function Login({
 
             {view === "joinOrg" && (
               <>
-                <Field label="Organization ID">
-                  <input
-                    className="auth-input"
-                    value={organizationId}
-                    onChange={(event) => setOrganizationId(event.target.value)}
-                    placeholder="ORG-X82KLM"
-                  />
-                </Field>
                 <Field label="Full Name">
                   <input
                     className="auth-input"
@@ -499,20 +488,6 @@ export default function Login({
             </button>
           )}
 
-          <div className="auth-switcher">
-            <button type="button" className="link-button" onClick={() => switchView("startOrg")}>
-              Start Organization
-            </button>
-            <button type="button" className="link-button" onClick={() => switchView("orgLogin")}>
-              Login as Organization
-            </button>
-            <button type="button" className="link-button" onClick={() => switchView("userLogin")}>
-              Login as User
-            </button>
-            <button type="button" className="link-button" onClick={() => switchView("joinOrg")}>
-              Join Organization
-            </button>
-          </div>
         </section>
       </main>
     </div>
