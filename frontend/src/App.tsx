@@ -14,6 +14,10 @@ type AppUser = {
   name: string;
   email: string;
   provider: "local" | "microsoft";
+  organizationId?: number | null;
+  organizationCode?: string | null;
+  role?: string | null;
+  department?: string | null;
 };
 
 type AppProps = {

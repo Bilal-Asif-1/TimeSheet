@@ -64,6 +64,17 @@ const ensureSchema = async () => {
     `);
     */
     await db.query(`
+    CREATE TABLE IF NOT EXISTS organizations (
+      id SERIAL PRIMARY KEY,
+      "orgCode" VARCHAR(24) NOT NULL UNIQUE,
+      name VARCHAR(160) NOT NULL,
+      "companyEmail" VARCHAR(255) NOT NULL,
+      industry VARCHAR(120),
+      "teamSize" VARCHAR(60),
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+    await db.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       name VARCHAR(120) NOT NULL,
@@ -73,6 +84,13 @@ const ensureSchema = async () => {
       "microsoftOid" VARCHAR(120),
       "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+    await db.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS "organizationId" INTEGER REFERENCES organizations(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS "organizationCode" VARCHAR(24),
+    ADD COLUMN IF NOT EXISTS role VARCHAR(40) NOT NULL DEFAULT 'employee',
+    ADD COLUMN IF NOT EXISTS department VARCHAR(120);
   `);
     await db.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS ux_users_microsoftoid_not_null
