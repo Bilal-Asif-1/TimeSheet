@@ -193,18 +193,15 @@ export default function Login({
       <div className="flow-auth-shell timesheet-landing-shell">
         <header className="flow-nav">
           <button className="brand-mark" type="button" onClick={() => switchView("landing")}>
-            <span className="brand-icon">T</span>
             <span>TimeSheet</span>
           </button>
           <nav className="flow-nav-center" aria-label="Product navigation">
             <button className="nav-link" type="button">Features</button>
             <button className="nav-link" type="button">Solutions</button>
             <button className="nav-link" type="button">Pricing</button>
-          </nav>
-          <div className="flow-nav-actions">
             <button className="nav-link" type="button">Contact</button>
             <button className="nav-link" type="button">About</button>
-          </div>
+          </nav>
         </header>
 
         <main className="timesheet-landing">
@@ -296,31 +293,31 @@ export default function Login({
 
   return (
     <div className="flow-auth-shell">
-      <header className="flow-nav">
-        <button className="brand-mark" type="button" onClick={() => switchView("landing")}>
-          <span className="brand-icon">T</span>
-          <span>TimeSheet</span>
-        </button>
-        <button className="nav-link" type="button" onClick={() => switchView("landing")}>
-          Back to overview
-        </button>
-      </header>
-
       <main className="auth-experience">
         <section className="auth-card-pro">
-          <div className="progress-steps" aria-label="Authentication flow steps">
-            <span className="active" />
-            <span className={view === "startOrg" || view === "joinOrg" ? "active" : ""} />
-            <span className={isLoginView ? "active" : ""} />
-          </div>
+          <button
+            className="form-back-button"
+            type="button"
+            onClick={() => switchView("landing")}
+            aria-label="Back to overview"
+          >
+            ←
+          </button>
 
           <p className="flow-eyebrow">{viewCopy.eyebrow}</p>
           <h1>{viewCopy.title}</h1>
           <p className="auth-subtitle">{viewCopy.subtitle}</p>
 
+          {view === "startOrg" && !createdOrgCode && (
+            <div className="info-banner">
+              Organization ID is generated automatically after creation. Save it for future Organization Login.
+            </div>
+          )}
+
           {createdOrgCode && (
             <div className="success-banner">
               Organization ID generated: <strong>{createdOrgCode}</strong>
+              <span>Use this ID when logging in as an organization.</span>
             </div>
           )}
 

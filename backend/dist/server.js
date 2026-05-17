@@ -8,6 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const db_1 = require("./config/db");
 const timesheet_routes_1 = __importDefault(require("./routes/timesheet.routes"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
+const organization_routes_1 = __importDefault(require("./routes/organization.routes"));
 const app = (0, express_1.default)();
 /** Canonical form so `http://host` and `http://host:80` match the same allowlist entry. */
 function canonicalOrigin(origin) {
@@ -82,6 +83,7 @@ app.use(express_1.default.json());
 // routes
 app.use("/timesheet", timesheet_routes_1.default);
 app.use("/auth", auth_routes_1.default);
+app.use("/organization", organization_routes_1.default);
 const PORT = process.env.PORT || 5001;
 const HOST = process.env.HOST || "0.0.0.0";
 const startServer = async () => {

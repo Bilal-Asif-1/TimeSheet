@@ -93,6 +93,16 @@ const ensureSchema = async () => {
     ADD COLUMN IF NOT EXISTS department VARCHAR(120);
   `);
     await db.query(`
+    CREATE TABLE IF NOT EXISTS departments (
+      id SERIAL PRIMARY KEY,
+      "organizationId" INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(120) NOT NULL,
+      description VARCHAR(255),
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE ("organizationId", name)
+    );
+  `);
+    await db.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS ux_users_microsoftoid_not_null
     ON users ("microsoftOid")
     WHERE "microsoftOid" IS NOT NULL;

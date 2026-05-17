@@ -6,6 +6,10 @@ type AppJwtPayload = jwt.JwtPayload & {
   email: string;
   name: string;
   provider: "local" | "microsoft";
+  organizationId?: number | null;
+  organizationCode?: string | null;
+  role?: string | null;
+  department?: string | null;
 };
 
 export const verifyAppToken = (

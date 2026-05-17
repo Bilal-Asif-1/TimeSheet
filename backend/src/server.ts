@@ -4,6 +4,7 @@ import type { CorsOptions } from "cors";
 import { connectDB, ensureSchema } from "./config/db";
 import timesheetRouter from "./routes/timesheet.routes";
 import authRouter from "./routes/auth.routes";
+import organizationRouter from "./routes/organization.routes";
 
 const app = express();
 
@@ -93,6 +94,7 @@ app.use(express.json());
 // routes
 app.use("/timesheet", timesheetRouter);
 app.use("/auth", authRouter);
+app.use("/organization", organizationRouter);
 
 const PORT = process.env.PORT || 5001;
 const HOST = process.env.HOST || "0.0.0.0";
