@@ -10,7 +10,7 @@ function MainLayout({ children, userName, onLogout, isLoggingOut }: MainLayoutPr
     <div className="app-shell">
       <header className="topbar">
         <div className="container topbar-inner">
-          <h2>Timesheet App</h2>
+          <h2>TimeSheet</h2>
           <div className="topbar-actions">
             <span className="user-chip">{userName}</span>
             <button
