@@ -28,6 +28,14 @@ const industries = ["Technology", "Finance", "Healthcare", "Education", "Retail"
 const teamSizes = ["1-10", "11-50", "51-200", "201-1000", "1000+"];
 const departments = ["Engineering", "Product", "Operations", "Finance", "People", "Sales"];
 
+const formatOrganizationId = (value: string) => {
+  const compactValue = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!compactValue) return "";
+
+  const suffix = compactValue.startsWith("ORG") ? compactValue.slice(3) : compactValue;
+  return `ORG-${suffix.slice(0, 12)}`;
+};
+
 export default function Login({
   onAuthSuccess,
   onMicrosoftLogin,
@@ -57,7 +65,7 @@ export default function Login({
         return {
           eyebrow: "Workspace setup",
           title: "Start your TimeSheet organization",
-          subtitle: "Create a secure workspace for teams, departments, roles, and timesheets.",
+          subtitle: "Create a secure workspace and choose the Organization ID your company will use.",
           primary: "Create organization",
         };
       case "orgLogin":
@@ -123,8 +131,8 @@ export default function Login({
 
       const isStartOrg = view === "startOrg";
       const isJoinOrg = view === "joinOrg";
-      if (isStartOrg && (!organizationName.trim() || !email.trim() || !password.trim())) {
-        throw new Error("Organization name, company email and password are required.");
+      if (isStartOrg && (!organizationName.trim() || !organizationId.trim() || !email.trim() || !password.trim())) {
+        throw new Error("Organization name, Organization ID, company email and password are required.");
       }
 
       if (view === "orgLogin" && (!organizationId.trim() || !email.trim() || !password.trim())) {
@@ -150,6 +158,7 @@ export default function Login({
                 email,
                 password,
                 organizationName,
+                organizationId,
                 industry,
                 teamSize,
               }
@@ -308,15 +317,9 @@ export default function Login({
           <h1>{viewCopy.title}</h1>
           <p className="auth-subtitle">{viewCopy.subtitle}</p>
 
-          {view === "startOrg" && !createdOrgCode && (
-            <div className="info-banner">
-              Organization ID is generated automatically after creation. Save it for future Organization Login.
-            </div>
-          )}
-
           {createdOrgCode && (
             <div className="success-banner">
-              Organization ID generated: <strong>{createdOrgCode}</strong>
+              Organization ID created: <strong>{createdOrgCode}</strong>
               <span>Use this ID when logging in as an organization.</span>
             </div>
           )}
@@ -330,6 +333,14 @@ export default function Login({
                     value={organizationName}
                     onChange={(event) => setOrganizationName(event.target.value)}
                     placeholder="Acme Operations"
+                  />
+                </Field>
+                <Field label="Organization ID">
+                  <input
+                    className="auth-input"
+                    value={organizationId}
+                    onChange={(event) => setOrganizationId(formatOrganizationId(event.target.value))}
+                    placeholder="ORG-WIMETRIX"
                   />
                 </Field>
                 <Field label="Company Email">
@@ -373,7 +384,7 @@ export default function Login({
                   <input
                     className="auth-input"
                     value={organizationId}
-                    onChange={(event) => setOrganizationId(event.target.value)}
+                    onChange={(event) => setOrganizationId(formatOrganizationId(event.target.value))}
                     placeholder="ORG-X82KLM"
                   />
                 </Field>

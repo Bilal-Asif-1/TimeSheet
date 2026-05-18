@@ -54,6 +54,8 @@ type DashboardProps = {
   user: AppUser;
 };
 
+type WorkspacePage = "overview" | "teams" | "elements" | "departments" | "employees" | "timesheets";
+
 const emptyOverview: OrganizationOverview = {
   organization: null,
   departments: [],
@@ -61,7 +63,17 @@ const emptyOverview: OrganizationOverview = {
   stats: { employees: 0, departments: 0, totalHours: 0, activeRoles: 0 },
 };
 
+const workspacePages: { id: WorkspacePage; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "teams", label: "Teams" },
+  { id: "elements", label: "Elements" },
+  { id: "departments", label: "Departments" },
+  { id: "employees", label: "Employees" },
+  { id: "timesheets", label: "Timesheets" },
+];
+
 export default function Dashboard({ token, user }: DashboardProps) {
+  const [activePage, setActivePage] = useState<WorkspacePage>("overview");
   const [data, setData] = useState<any[]>([]);
   const [overview, setOverview] = useState<OrganizationOverview>(emptyOverview);
   const [task, setTask] = useState("");
@@ -257,17 +269,40 @@ export default function Dashboard({ token, user }: DashboardProps) {
     { label: "Automation queue", value: "0 rules" },
   ];
 
+  const joinWorkspaceCard = (
+    <section className="workspace-card workspace-join-card">
+      <div>
+        <p className="eyebrow">Join Workspace</p>
+        <h2>Connect this user to an organization</h2>
+        <p className="muted">After login, employees can join using the Organization ID shared by their company.</p>
+      </div>
+      <div className="join-org-controls">
+        <input className="input" placeholder="ORG-X82KLM" value={joinOrgId} onChange={(event) => setJoinOrgId(event.target.value)} />
+        <input className="input" placeholder="Department" value={joinDepartment} onChange={(event) => setJoinDepartment(event.target.value)} />
+        <button className="btn btn-secondary" onClick={joinOrganization} disabled={isJoining}>
+          {isJoining ? "Joining..." : "Join Organization"}
+        </button>
+      </div>
+      {joinError && <p className="error-text">{joinError}</p>}
+      {joinSuccess && <p className="success-text">{joinSuccess}</p>}
+    </section>
+  );
+
   return (
     <div className="workspace-shell">
       <aside className="workspace-sidebar">
         <div className="sidebar-brand">TimeSheet</div>
         <nav className="sidebar-nav" aria-label="Workspace sections">
-          <a href="#overview" className="active">Overview</a>
-          <a href="#teams">Teams</a>
-          <a href="#elements">Elements</a>
-          <a href="#departments">Departments</a>
-          <a href="#employees">Employees</a>
-          <a href="#timesheets">Timesheets</a>
+          {workspacePages.map((page) => (
+            <button
+              className={activePage === page.id ? "active" : ""}
+              key={page.id}
+              onClick={() => setActivePage(page.id)}
+              type="button"
+            >
+              {page.label}
+            </button>
+          ))}
         </nav>
         <div className="sidebar-profile">
           <span>{user.role || "employee"}</span>
@@ -277,51 +312,38 @@ export default function Dashboard({ token, user }: DashboardProps) {
       </aside>
 
       <div className="dashboard-wrap workspace-dashboard">
-        <section id="overview" className="workspace-hero-panel">
-          <div>
-            <p className="eyebrow">TimeSheet Workspace</p>
-            <h1>{orgName}</h1>
-            <p className="workspace-hero-copy">
-              {overview.organization
-                ? `Organization ID ${overview.organization.orgCode} - ${overview.organization.industry || "Operations"} workspace`
-                : "You are in a personal workspace. Join an organization to unlock company departments and employees."}
-            </p>
-          </div>
-          <div className="workspace-hero-meta">
-            <span>{user.role || "employee"}</span>
-            <strong>{user.name}</strong>
-            <small>{user.email}</small>
-          </div>
-        </section>
+        {activePage === "overview" && (
+          <>
+            <section className="workspace-hero-panel">
+              <div>
+                <p className="eyebrow">TimeSheet Workspace</p>
+                <h1>{orgName}</h1>
+                <p className="workspace-hero-copy">
+                  {overview.organization
+                    ? `Organization ID ${overview.organization.orgCode} - ${overview.organization.industry || "Operations"} workspace`
+                    : "You are in a personal workspace. Join an organization to unlock company departments and employees."}
+                </p>
+              </div>
+              <div className="workspace-hero-meta">
+                <span>{user.role || "employee"}</span>
+                <strong>{user.name}</strong>
+                <small>{user.email}</small>
+              </div>
+            </section>
 
-        <section className="workspace-stats-grid">
-          <StatCard label="Employees" value={overview.stats.employees} />
-          <StatCard label="Departments" value={overview.stats.departments} />
-          <StatCard label="Org Hours" value={overview.stats.totalHours} />
-          <StatCard label="My Hours" value={totalHours} />
-        </section>
+            <section className="workspace-stats-grid">
+              <StatCard label="Employees" value={overview.stats.employees} />
+              <StatCard label="Departments" value={overview.stats.departments} />
+              <StatCard label="Org Hours" value={overview.stats.totalHours} />
+              <StatCard label="My Hours" value={totalHours} />
+            </section>
 
-        {!overview.organization && (
-        <section className="workspace-card workspace-join-card">
-          <div>
-            <p className="eyebrow">Join Workspace</p>
-            <h2>Connect this user to an organization</h2>
-            <p className="muted">After login, employees can join using the Organization ID shared by their company.</p>
-          </div>
-          <div className="join-org-controls">
-            <input className="input" placeholder="ORG-X82KLM" value={joinOrgId} onChange={(event) => setJoinOrgId(event.target.value)} />
-            <input className="input" placeholder="Department" value={joinDepartment} onChange={(event) => setJoinDepartment(event.target.value)} />
-            <button className="btn btn-secondary" onClick={joinOrganization} disabled={isJoining}>
-              {isJoining ? "Joining..." : "Join Organization"}
-            </button>
-          </div>
-          {joinError && <p className="error-text">{joinError}</p>}
-          {joinSuccess && <p className="success-text">{joinSuccess}</p>}
-        </section>
+            {!overview.organization && joinWorkspaceCard}
+          </>
         )}
 
-        {overview.organization && (
-          <section id="teams" className="workspace-grid teams-elements-grid">
+        {overview.organization && activePage === "teams" && (
+          <section className="workspace-grid single-panel">
             <div className="workspace-card">
               <div className="section-heading">
                 <div>
@@ -342,8 +364,12 @@ export default function Dashboard({ token, user }: DashboardProps) {
                 ))}
               </div>
             </div>
+          </section>
+        )}
 
-            <div id="elements" className="workspace-card">
+        {overview.organization && activePage === "elements" && (
+          <section className="workspace-grid">
+            <div className="workspace-card">
               <div className="section-heading">
                 <div>
                   <p className="eyebrow">Elements</p>
@@ -362,9 +388,9 @@ export default function Dashboard({ token, user }: DashboardProps) {
           </section>
         )}
 
-        {overview.organization && (
-        <section id="departments" className="workspace-grid">
-          <div id="employees" className="workspace-card">
+        {overview.organization && activePage === "departments" && (
+        <section className="workspace-grid">
+          <div className="workspace-card">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">Departments</p>
@@ -394,7 +420,11 @@ export default function Dashboard({ token, user }: DashboardProps) {
               ))}
             </div>
           </div>
+        </section>
+        )}
 
+        {overview.organization && activePage === "employees" && (
+        <section className="workspace-grid">
           <div className="workspace-card">
             <div className="section-heading">
               <div>
@@ -418,7 +448,10 @@ export default function Dashboard({ token, user }: DashboardProps) {
         </section>
         )}
 
-        <section id="timesheets" className="workspace-card">
+        {!overview.organization && activePage !== "overview" && activePage !== "timesheets" && joinWorkspaceCard}
+
+        {activePage === "timesheets" && (
+        <section className="workspace-card">
         <div className="section-heading">
           <div>
             <p className="eyebrow">Timesheets</p>
@@ -469,6 +502,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
           ))}
         </div>
         </section>
+        )}
       </div>
     </div>
   );

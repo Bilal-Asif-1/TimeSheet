@@ -42,11 +42,20 @@ const register = async (req, res) => {
         let organization = null;
         let role = "employee";
         if (organizationName?.trim()) {
-            let orgCode = generateOrganizationCode();
+            let orgCode = organizationId?.trim().toUpperCase() || generateOrganizationCode();
+            if (!/^ORG-[A-Z0-9]{4,12}$/.test(orgCode)) {
+                return res
+                    .status(400)
+                    .json({ error: "Organization ID must look like ORG-WIMETRIX or ORG-1234." });
+            }
             for (let attempts = 0; attempts < 5; attempts += 1) {
                 const existingCode = await pool.query(`SELECT id FROM organizations WHERE "orgCode" = $1 LIMIT 1`, [orgCode]);
-                if (existingCode.rows.length === 0)
+                if (existingCode.rows.length === 0) {
                     break;
+                }
+                if (organizationId?.trim()) {
+                    return res.status(409).json({ error: "Organization ID is already taken." });
+                }
                 orgCode = generateOrganizationCode();
             }
             const insertedOrg = await pool.query(`INSERT INTO organizations ("orgCode", name, "companyEmail", industry, "teamSize")

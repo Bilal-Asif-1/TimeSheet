@@ -274,7 +274,7 @@ p {
   gap: 8px;
 }
 
-.sidebar-nav a {
+.sidebar-nav button {
   min-height: 40px;
   display: flex;
   align-items: center;
@@ -282,13 +282,16 @@ p {
   border: 1px solid transparent;
   border-radius: 12px;
   color: #a3a3a3;
-  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
   font-size: 14px;
   font-weight: 800;
+  font-family: inherit;
+  text-align: left;
 }
 
-.sidebar-nav a:hover,
-.sidebar-nav a.active {
+.sidebar-nav button:hover,
+.sidebar-nav button.active {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.08);
@@ -390,6 +393,10 @@ p {
   display: grid;
   grid-template-columns: minmax(360px, 0.8fr) minmax(520px, 1.2fr);
   gap: 20px;
+}
+
+.workspace-grid.single-panel {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .teams-elements-grid {
