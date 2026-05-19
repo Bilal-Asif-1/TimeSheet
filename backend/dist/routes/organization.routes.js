@@ -10,5 +10,6 @@ const router = express_1.default.Router();
 router.use(verifyAppToken_1.verifyAppToken);
 router.get("/overview", organization_controller_1.getOrganizationOverview);
 router.post("/create", organization_controller_1.createOrganization);
+router.post("/select", organization_controller_1.selectOrganization);
 router.post("/departments", organization_controller_1.createDepartment);
 exports.default = router;

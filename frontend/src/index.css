@@ -77,25 +77,26 @@ p {
   gap: 10px;
 }
 
-.user-chip {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+.user-chip,
+.topbar .btn-secondary {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 0 14px;
   font-size: 12px;
   font-weight: 800;
-  color: #e5e7eb;
-}
-
-.topbar .btn-secondary {
+  line-height: 1;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: #3f3f46;
+  background: rgba(255, 255, 255, 0.11);
   color: #ffffff;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
 }
 
 .topbar .btn-secondary:hover {
-  background: #52525b;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .main-content {
@@ -247,14 +248,14 @@ p {
 }
 
 .workspace-shell {
-  --workspace-sidebar-width: 250px;
+  --workspace-sidebar-width: 220px;
   display: block;
-  padding-left: calc(var(--workspace-sidebar-width) + 24px);
+  padding-left: calc(var(--workspace-sidebar-width) + 20px);
   align-items: start;
 }
 
 .workspace-shell.no-organization-shell {
-  --workspace-sidebar-width: 220px;
+  --workspace-sidebar-width: 205px;
 }
 
 .workspace-shell.organization-area-shell {
@@ -264,17 +265,17 @@ p {
 .workspace-sidebar {
   position: fixed;
   left: max(24px, calc((100vw - 1280px) / 2));
-  top: 96px;
+  top: 112px;
   z-index: 20;
   width: var(--workspace-sidebar-width);
-  min-height: calc(100vh - 132px);
-  max-height: calc(100vh - 132px);
+  min-height: calc(100vh - 148px);
+  max-height: calc(100vh - 148px);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 26px;
-  padding: 20px;
+  border-radius: 22px;
+  padding: 16px;
   color: #ffffff;
   background:
     radial-gradient(circle at 80% 8%, rgba(255, 255, 255, 0.12), transparent 26%),
@@ -283,7 +284,7 @@ p {
 }
 
 .sidebar-brand {
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 900;
   color: transparent;
   background: linear-gradient(135deg, #ffffff, #71717a);
@@ -293,20 +294,20 @@ p {
 
 .sidebar-nav {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sidebar-nav button {
-  min-height: 40px;
+  min-height: 36px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 11px;
   color: #a3a3a3;
   background: transparent;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   font-family: inherit;
   text-align: left;
@@ -322,10 +323,10 @@ p {
 .sidebar-profile {
   margin-top: auto;
   display: grid;
-  gap: 5px;
-  padding: 14px;
+  gap: 4px;
+  padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -741,7 +742,7 @@ p {
 
 .organization-select-button {
   width: 100%;
-  min-height: 120px;
+  min-height: 132px;
   display: grid;
   gap: 8px;
   padding: 22px;
@@ -754,6 +755,13 @@ p {
   cursor: pointer;
   font: inherit;
   text-align: left;
+}
+
+.organization-select-button.active {
+  border-color: rgba(255, 255, 255, 0.34);
+  background:
+    radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.22), transparent 24%),
+    rgba(255, 255, 255, 0.12);
 }
 
 .organization-select-button:hover {
@@ -772,6 +780,65 @@ p {
 
 .organization-select-button strong {
   font-size: 28px;
+}
+
+.organization-lists {
+  display: grid;
+  gap: 20px;
+}
+
+.organization-list-section {
+  display: grid;
+  gap: 12px;
+}
+
+.organization-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.organization-list-heading small {
+  min-width: 28px;
+  min-height: 26px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #d4d4d8;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+}
+
+.organization-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.organization-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.organization-card-meta em {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0 9px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: capitalize;
 }
 
 .organization-empty-state {
@@ -2010,6 +2077,7 @@ p {
   .settings-grid,
   .reports-kpi-grid,
   .organization-detail-grid,
+  .organization-card-grid,
   .workspace-stats-grid,
   .department-form,
   .employee-row,

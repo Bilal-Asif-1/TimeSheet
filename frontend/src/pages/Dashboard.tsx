@@ -30,6 +30,19 @@ type Employee = {
   provider: "local" | "microsoft";
 };
 
+type OrganizationMembership = {
+  id: number;
+  orgCode: string;
+  name: string;
+  companyEmail: string;
+  industry?: string | null;
+  teamSize?: string | null;
+  role: string;
+  department?: string | null;
+  membershipType: "owned" | "joined";
+  isActive: boolean;
+};
+
 type OrganizationOverview = {
   organization: {
     id: number;
@@ -39,6 +52,9 @@ type OrganizationOverview = {
     industry?: string | null;
     teamSize?: string | null;
   } | null;
+  memberships: OrganizationMembership[];
+  ownedOrganizations: OrganizationMembership[];
+  joinedOrganizations: OrganizationMembership[];
   departments: Department[];
   employees: Employee[];
   stats: {
@@ -73,6 +89,9 @@ type OrganizationAction = "create" | "join" | null;
 
 const emptyOverview: OrganizationOverview = {
   organization: null,
+  memberships: [],
+  ownedOrganizations: [],
+  joinedOrganizations: [],
   departments: [],
   employees: [],
   stats: { employees: 0, departments: 0, totalHours: 0, activeRoles: 0 },
@@ -99,7 +118,14 @@ const formatOrganizationId = (value: string) => {
 };
 
 export default function Dashboard({ token, user }: DashboardProps) {
-  const [activePage, setActivePage] = useState<WorkspacePage>("overview");
+  const [activePage, setActivePage] = useState<WorkspacePage>(() => {
+    const pendingPage = localStorage.getItem("pendingDashboardPage");
+    if (pendingPage === "organizationDetails") {
+      localStorage.removeItem("pendingDashboardPage");
+      return "organizationDetails";
+    }
+    return "overview";
+  });
   const [data, setData] = useState<any[]>([]);
   const [overview, setOverview] = useState<OrganizationOverview>(emptyOverview);
   const [task, setTask] = useState("");
@@ -296,6 +322,30 @@ export default function Dashboard({ token, user }: DashboardProps) {
     }
   };
 
+  const selectOrganization = async (organizationIdValue: number | string) => {
+    try {
+      const response = await fetch(`${API_BASE}/organization/select`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ organizationId: organizationIdValue }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to open organization.");
+
+      localStorage.setItem("appToken", payload.token);
+      localStorage.setItem("appUser", JSON.stringify(payload.user));
+      localStorage.setItem("pendingDashboardPage", "organizationDetails");
+      window.setTimeout(() => window.location.reload(), 250);
+    } catch (error) {
+      const err = error as Error;
+      setOrganizationError(err.message);
+    }
+  };
+
   const addDepartment = async () => {
     if (!departmentName.trim()) {
       setDepartmentError("Department name is required.");
@@ -442,6 +492,24 @@ export default function Dashboard({ token, user }: DashboardProps) {
       {joinError && <p className="error-text">{joinError}</p>}
       {joinSuccess && <p className="success-text">{joinSuccess}</p>}
     </section>
+  );
+
+  const renderOrganizationCard = (item: OrganizationMembership) => (
+    <button
+      className={`organization-select-button${item.isActive ? " active" : ""}`}
+      key={`${item.membershipType}-${item.id}`}
+      onClick={() => (item.isActive ? setActivePage("organizationDetails") : selectOrganization(item.id))}
+      type="button"
+    >
+      <span>{item.membershipType === "owned" ? "Created by you" : "Joined workspace"}</span>
+      <strong>{item.name}</strong>
+      <small>{item.orgCode}</small>
+      <div className="organization-card-meta">
+        <em>{item.role || "employee"}</em>
+        {item.department && <em>{item.department}</em>}
+        {item.isActive && <em>Active</em>}
+      </div>
+    </button>
   );
 
   const noOrganizationActions = (
@@ -635,7 +703,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
               <div className="section-heading">
                 <div>
                   <p className="eyebrow">Organizations</p>
-                  <h2>{organization ? "Your workspaces" : "No organization connected"}</h2>
+                  <h2>Your workspaces</h2>
                 </div>
                 <div className="organization-page-actions">
                   <button
@@ -657,23 +725,42 @@ export default function Dashboard({ token, user }: DashboardProps) {
                   </button>
                 </div>
               </div>
-              {organization ? (
-                <div className="organization-connected-actions">
-                  <button
-                    className="organization-select-button"
-                    onClick={() => setActivePage("organizationDetails")}
-                    type="button"
-                  >
-                    <span>Current organization</span>
-                    <strong>{organization.name}</strong>
-                    <small>{organization.orgCode}</small>
-                  </button>
+              {overview.memberships.length > 0 ? (
+                <div className="organization-lists">
+                  <div className="organization-list-section">
+                    <div className="organization-list-heading">
+                      <span>My Organizations</span>
+                      <small>{overview.ownedOrganizations.length}</small>
+                    </div>
+                    {overview.ownedOrganizations.length > 0 ? (
+                      <div className="organization-card-grid">
+                        {overview.ownedOrganizations.map(renderOrganizationCard)}
+                      </div>
+                    ) : (
+                      <p className="muted">Organizations you create will appear here.</p>
+                    )}
+                  </div>
+
+                  <div className="organization-list-section">
+                    <div className="organization-list-heading">
+                      <span>Joined Organizations</span>
+                      <small>{overview.joinedOrganizations.length}</small>
+                    </div>
+                    {overview.joinedOrganizations.length > 0 ? (
+                      <div className="organization-card-grid">
+                        {overview.joinedOrganizations.map(renderOrganizationCard)}
+                      </div>
+                    ) : (
+                      <p className="muted">Organizations you join as employee, manager, or staff will appear here.</p>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="organization-empty-state">
-                  <p className="muted">You are not connected to an organization yet. Use the actions above to continue.</p>
+                  <p className="muted">You are not connected to an organization yet. Create your own workspace or join one shared by your company.</p>
                 </div>
               )}
+              {organizationError && <p className="error-text">{organizationError}</p>}
             </div>
 
             {organizationAction === "join" && (

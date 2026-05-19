@@ -13,6 +13,19 @@ type AppUser = {
   department?: string | null;
 };
 
+type OrganizationMembership = {
+  id: number;
+  orgCode: string;
+  name: string;
+  companyEmail: string;
+  industry?: string | null;
+  teamSize?: string | null;
+  role: string;
+  department?: string | null;
+  membershipType: "owned" | "joined";
+  isActive: boolean;
+};
+
 const getAppUser = (req: Request) => (req as Request & { appUser?: AppUser }).appUser;
 
 const issueAppToken = (payload: {
@@ -36,10 +49,6 @@ export const createOrganization = async (req: Request, res: Response) => {
     const appUser = getAppUser(req);
     if (!appUser?.userId) {
       return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    if (appUser.organizationId || appUser.organizationCode) {
-      return res.status(409).json({ error: "This user already belongs to an organization." });
     }
 
     const { organizationName, organizationId, industry, teamSize } = req.body as {
@@ -83,6 +92,16 @@ export const createOrganization = async (req: Request, res: Response) => {
     );
 
     const organization = insertedOrg.rows[0];
+    await pool.query(
+      `INSERT INTO organization_members ("userId", "organizationId", role, department, "membershipType")
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT ("userId", "organizationId")
+       DO UPDATE SET role = EXCLUDED.role,
+                     department = EXCLUDED.department,
+                     "membershipType" = EXCLUDED."membershipType"`,
+      [appUser.userId, organization.id, "ceo", appUser.department || null, "owned"],
+    );
+
     const updatedUser = await pool.query(
       `UPDATE users
        SET "organizationId" = $1, "organizationCode" = $2, role = $3
@@ -117,16 +136,40 @@ export const getOrganizationOverview = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    const pool = await connectDB();
+    const membershipsResult = await pool.query(
+      `SELECT o.id,
+              o."orgCode",
+              o.name,
+              o."companyEmail",
+              o.industry,
+              o."teamSize",
+              om.role,
+              om.department,
+              om."membershipType",
+              (o.id = $2 OR UPPER(o."orgCode") = UPPER(COALESCE($3, ''))) AS "isActive"
+       FROM organization_members om
+       INNER JOIN organizations o ON o.id = om."organizationId"
+       WHERE om."userId" = $1
+       ORDER BY
+        CASE om."membershipType" WHEN 'owned' THEN 0 ELSE 1 END,
+        o.name ASC`,
+      [appUser.userId, appUser.organizationId || null, appUser.organizationCode || null],
+    );
+    const memberships = membershipsResult.rows as OrganizationMembership[];
+
     if (!appUser.organizationId && !appUser.organizationCode) {
       return res.json({
         organization: null,
+        memberships,
+        ownedOrganizations: memberships.filter((item) => item.membershipType === "owned"),
+        joinedOrganizations: memberships.filter((item) => item.membershipType !== "owned"),
         departments: [],
         employees: [],
         stats: { employees: 0, departments: 0, totalHours: 0, activeRoles: 0 },
       });
     }
 
-    const pool = await connectDB();
     const orgResult = await pool.query(
       `SELECT id, "orgCode", name, "companyEmail", industry, "teamSize", "createdAt"
        FROM organizations
@@ -136,7 +179,15 @@ export const getOrganizationOverview = async (req: Request, res: Response) => {
     );
 
     if (orgResult.rows.length === 0) {
-      return res.status(404).json({ error: "Organization was not found." });
+      return res.json({
+        organization: null,
+        memberships,
+        ownedOrganizations: memberships.filter((item) => item.membershipType === "owned"),
+        joinedOrganizations: memberships.filter((item) => item.membershipType !== "owned"),
+        departments: [],
+        employees: [],
+        stats: { employees: 0, departments: 0, totalHours: 0, activeRoles: 0 },
+      });
     }
 
     const organization = orgResult.rows[0];
@@ -174,6 +225,9 @@ export const getOrganizationOverview = async (req: Request, res: Response) => {
 
     return res.json({
       organization,
+      memberships,
+      ownedOrganizations: memberships.filter((item) => item.membershipType === "owned"),
+      joinedOrganizations: memberships.filter((item) => item.membershipType !== "owned"),
       departments: departments.rows,
       employees: employees.rows,
       stats: {
@@ -183,6 +237,73 @@ export const getOrganizationOverview = async (req: Request, res: Response) => {
         activeRoles: activeRoles.size,
       },
     });
+  } catch (error) {
+    const err = error as Error;
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const selectOrganization = async (req: Request, res: Response) => {
+  try {
+    const appUser = getAppUser(req);
+    if (!appUser?.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { organizationId } = req.body as { organizationId?: number | string };
+    if (!organizationId) {
+      return res.status(400).json({ error: "Organization is required." });
+    }
+
+    const pool = await connectDB();
+    const membership = await pool.query(
+      `SELECT om.role,
+              om.department,
+              o.id AS "organizationId",
+              o."orgCode" AS "organizationCode"
+       FROM organization_members om
+       INNER JOIN organizations o ON o.id = om."organizationId"
+       WHERE om."userId" = $1
+         AND (o.id::text = $2 OR UPPER(o."orgCode") = UPPER($2))
+       LIMIT 1`,
+      [appUser.userId, String(organizationId)],
+    );
+
+    if (membership.rows.length === 0) {
+      return res.status(403).json({ error: "You are not a member of this organization." });
+    }
+
+    const selected = membership.rows[0];
+    const updated = await pool.query(
+      `UPDATE users
+       SET "organizationId" = $1,
+           "organizationCode" = $2,
+           role = $3,
+           department = $4
+       WHERE id = $5
+       RETURNING id, name, email, provider, "organizationId", "organizationCode", role, department`,
+      [
+        selected.organizationId,
+        selected.organizationCode,
+        selected.role,
+        selected.department,
+        appUser.userId,
+      ],
+    );
+
+    const user = updated.rows[0];
+    const token = issueAppToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      provider: user.provider,
+      organizationId: user.organizationId,
+      organizationCode: user.organizationCode,
+      role: user.role,
+      department: user.department,
+    });
+
+    return res.json({ token, user });
   } catch (error) {
     const err = error as Error;
     return res.status(500).json({ error: err.message });

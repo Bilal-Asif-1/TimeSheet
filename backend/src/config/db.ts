@@ -109,6 +109,31 @@ export const ensureSchema = async () => {
   `);
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS organization_members (
+      id SERIAL PRIMARY KEY,
+      "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      "organizationId" INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      role VARCHAR(40) NOT NULL DEFAULT 'employee',
+      department VARCHAR(120),
+      "membershipType" VARCHAR(20) NOT NULL DEFAULT 'joined',
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE ("userId", "organizationId")
+    );
+  `);
+
+  await db.query(`
+    INSERT INTO organization_members ("userId", "organizationId", role, department, "membershipType")
+    SELECT id,
+           "organizationId",
+           COALESCE(role, 'employee'),
+           department,
+           CASE WHEN role = 'ceo' THEN 'owned' ELSE 'joined' END
+    FROM users
+    WHERE "organizationId" IS NOT NULL
+    ON CONFLICT ("userId", "organizationId") DO NOTHING;
+  `);
+
+  await db.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS ux_users_microsoftoid_not_null
     ON users ("microsoftOid")
     WHERE "microsoftOid" IS NOT NULL;

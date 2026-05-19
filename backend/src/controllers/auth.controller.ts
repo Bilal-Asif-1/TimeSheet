@@ -138,6 +138,24 @@ export const register = async (req: Request, res: Response) => {
     );
 
     const user = inserted.rows[0];
+    if (organization) {
+      await pool.query(
+        `INSERT INTO organization_members ("userId", "organizationId", role, department, "membershipType")
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT ("userId", "organizationId")
+         DO UPDATE SET role = EXCLUDED.role,
+                       department = EXCLUDED.department,
+                       "membershipType" = EXCLUDED."membershipType"`,
+        [
+          user.id,
+          organization.id,
+          role,
+          department?.trim() || null,
+          role === "ceo" ? "owned" : "joined",
+        ],
+      );
+    }
+
     const token = issueAppToken({
       userId: user.id,
       email: user.email,
@@ -309,11 +327,19 @@ export const joinOrganization = async (req: Request, res: Response) => {
     }
 
     const organization = orgResult.rows[0];
+    await pool.query(
+      `INSERT INTO organization_members ("userId", "organizationId", role, department, "membershipType")
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT ("userId", "organizationId")
+       DO UPDATE SET department = COALESCE(EXCLUDED.department, organization_members.department)`,
+      [appUser.userId, organization.id, "employee", department?.trim() || null, "joined"],
+    );
+
     const updated = await pool.query(
       `UPDATE users
        SET "organizationId" = $1,
            "organizationCode" = $2,
-           role = CASE WHEN role = 'ceo' THEN role ELSE 'employee' END,
+           role = CASE WHEN role = 'ceo' AND "organizationId" = $1 THEN role ELSE 'employee' END,
            department = COALESCE($3, department)
        WHERE id = $4
        RETURNING id, name, email, provider, "organizationId", "organizationCode", role, department`,
