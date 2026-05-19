@@ -609,6 +609,14 @@ p {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.task-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.task-toolbar-grid {
+  margin-bottom: 20px;
+}
+
 .my-organization-grid,
 .reports-grid,
 .settings-grid {
@@ -682,9 +690,14 @@ p {
 .status-list,
 .recent-work-list,
 .task-board-list,
+.task-detail-list,
 .organization-detail-grid {
   display: grid;
   gap: 10px;
+}
+
+.task-detail-list {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .department-item,
@@ -705,6 +718,58 @@ p {
   min-height: 440px;
 }
 
+.task-summary-card {
+  min-height: 160px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.task-summary-card:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+  background:
+    radial-gradient(circle at 90% 14%, rgba(255, 255, 255, 0.14), transparent 28%),
+    rgba(255, 255, 255, 0.08);
+}
+
+.task-summary-card span {
+  color: #a3a3a3;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.task-summary-card strong {
+  font-size: 26px;
+}
+
+.task-summary-card small {
+  width: 42px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.task-summary-card p {
+  color: #a3a3a3;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.task-status-page {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+}
+
 .count-pill {
   display: inline-grid;
   min-width: 34px;
@@ -723,6 +788,182 @@ p {
   display: grid;
   gap: 6px;
   padding: 14px;
+}
+
+.task-create-card,
+.task-insight-card {
+  min-height: auto;
+}
+
+.create-task-page {
+  width: min(880px, 100%);
+  max-width: 880px;
+  margin: 0 auto;
+  justify-items: stretch;
+}
+
+.task-toolbar-card {
+  min-height: auto;
+}
+
+.task-create-form {
+  display: grid;
+  gap: 12px;
+}
+
+.task-create-form textarea,
+.completion-panel textarea {
+  resize: vertical;
+}
+
+.task-create-row {
+  display: grid;
+  grid-template-columns: 0.9fr 0.8fr 1fr;
+  gap: 10px;
+}
+
+.task-file-drop {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 92% 18%, rgba(255, 255, 255, 0.1), transparent 28%),
+    rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.task-file-drop span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.task-file-drop small {
+  color: #a3a3a3;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.task-file-drop input {
+  color: #d4d4d8;
+  font-size: 12px;
+}
+
+.task-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workflow-task-card {
+  position: relative;
+  overflow: hidden;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.task-detail-card {
+  cursor: default;
+}
+
+.workflow-task-card:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.workflow-task-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #a3a3a3;
+}
+
+.workflow-task-card.priority-high::before {
+  background: #f59e0b;
+}
+
+.workflow-task-card.priority-urgent::before {
+  background: #ef4444;
+}
+
+.workflow-task-card.priority-low::before {
+  background: #22c55e;
+}
+
+.workflow-task-card p,
+.completion-summary p {
+  color: #d4d4d8;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.workflow-task-card-top,
+.workflow-task-meta,
+.task-action-row,
+.task-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workflow-task-card-top {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.workflow-task-card-top span,
+.workflow-task-card-top small,
+.task-org-chip,
+.workflow-task-meta span,
+.task-attachment-list a,
+.completion-summary span,
+.completion-summary small {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0 9px;
+  color: #d4d4d8;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 11px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.task-org-chip {
+  width: fit-content;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.task-org-chip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.workflow-task-card-top span {
+  color: #ffffff;
+  text-transform: capitalize;
+}
+
+.task-action-row .btn {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 11px;
+  font-size: 12px;
+}
+
+.completion-panel,
+.completion-summary {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .task-board-card span,
@@ -2069,6 +2310,11 @@ p {
   .dashboard-kpi-grid,
   .overview-ops-grid,
   .task-board-grid,
+  .task-summary-grid,
+  .task-toolbar-grid,
+  .task-create-row,
+  .task-detail-list,
+  .task-insight-grid,
   .my-organization-grid,
   .organization-empty-grid,
   .organization-connected-grid,

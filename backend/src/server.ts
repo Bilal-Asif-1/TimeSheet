@@ -5,6 +5,7 @@ import { connectDB, ensureSchema } from "./config/db";
 import timesheetRouter from "./routes/timesheet.routes";
 import authRouter from "./routes/auth.routes";
 import organizationRouter from "./routes/organization.routes";
+import taskRouter from "./routes/task.routes";
 
 const app = express();
 
@@ -90,11 +91,13 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 // routes
 app.use("/timesheet", timesheetRouter);
 app.use("/auth", authRouter);
 app.use("/organization", organizationRouter);
+app.use("/tasks", taskRouter);
 
 const PORT = process.env.PORT || 5001;
 const HOST = process.env.HOST || "0.0.0.0";

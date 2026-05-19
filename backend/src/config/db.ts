@@ -147,4 +147,39 @@ export const ensureSchema = async () => {
       "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
     );
   `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id SERIAL PRIMARY KEY,
+      "organizationId" INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      title VARCHAR(180) NOT NULL,
+      description TEXT,
+      "assignedBy" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      "assignedTo" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      priority VARCHAR(20) NOT NULL DEFAULT 'medium',
+      status VARCHAR(30) NOT NULL DEFAULT 'pending',
+      "estimatedHours" NUMERIC(8, 2),
+      "deadlineAt" TIMESTAMPTZ,
+      "startedAt" TIMESTAMPTZ,
+      "totalSeconds" INTEGER NOT NULL DEFAULT 0,
+      "completionReport" TEXT,
+      blockers TEXT,
+      "submittedAt" TIMESTAMPTZ,
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS task_attachments (
+      id SERIAL PRIMARY KEY,
+      "taskId" INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      "originalName" VARCHAR(255) NOT NULL,
+      "fileName" VARCHAR(255) NOT NULL,
+      "mimeType" VARCHAR(120),
+      size INTEGER NOT NULL DEFAULT 0,
+      path VARCHAR(500) NOT NULL,
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 };

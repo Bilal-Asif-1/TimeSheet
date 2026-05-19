@@ -3,6 +3,7 @@ import { getApiBaseUrl } from "../config/env";
 
 const API_BASE = getApiBaseUrl();
 const BASE_URL = `${API_BASE}/timesheet`;
+const TASK_URL = `${API_BASE}/tasks`;
 
 type AppUser = {
   id: number;
@@ -65,6 +66,34 @@ type OrganizationOverview = {
   };
 };
 
+type TaskAttachment = {
+  id: number;
+  originalName: string;
+  mimeType?: string | null;
+  size: number;
+  url: string;
+};
+
+type WorkflowTask = {
+  id: number;
+  title: string;
+  description?: string | null;
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "pending" | "in_progress" | "completed";
+  estimatedHours?: string | number | null;
+  deadlineAt?: string | null;
+  startedAt?: string | null;
+  totalSeconds: number;
+  completionReport?: string | null;
+  blockers?: string | null;
+  submittedAt?: string | null;
+  createdAt: string;
+  organization: { id: number; name: string; orgCode: string };
+  assignedBy: { id: number; name: string; email: string };
+  assignedTo: { id: number; name: string; email: string; department?: string | null };
+  attachments: TaskAttachment[];
+};
+
 type DashboardProps = {
   token: string;
   user: AppUser;
@@ -74,6 +103,10 @@ type WorkspacePage =
   | "overview"
   | "tasks"
   | "timesheets"
+  | "taskPending"
+  | "taskProgress"
+  | "taskCompleted"
+  | "taskDetails"
   | "myOrganization"
   | "teams"
   | "departments"
@@ -82,6 +115,7 @@ type WorkspacePage =
   | "reports"
   | "elements"
   | "settings"
+  | "createTask"
   | "createOrganization"
   | "organizationDetails";
 
@@ -106,6 +140,15 @@ const workspacePages: { id: WorkspacePage; label: string }[] = [
   { id: "settings", label: "Settings" },
 ];
 
+const pendingDashboardPages: WorkspacePage[] = [
+  "overview",
+  "tasks",
+  "taskPending",
+  "taskProgress",
+  "taskCompleted",
+  "organizationDetails",
+];
+
 const industries = ["Technology", "Finance", "Healthcare", "Education", "Retail", "Operations"];
 const teamSizes = ["1-10", "11-50", "51-200", "201-1000", "1000+"];
 
@@ -117,16 +160,32 @@ const formatOrganizationId = (value: string) => {
   return `ORG-${suffix.slice(0, 12)}`;
 };
 
+const formatDuration = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const secs = safeSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "No deadline";
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+};
+
 export default function Dashboard({ token, user }: DashboardProps) {
   const [activePage, setActivePage] = useState<WorkspacePage>(() => {
     const pendingPage = localStorage.getItem("pendingDashboardPage");
-    if (pendingPage === "organizationDetails") {
+    if (pendingDashboardPages.includes(pendingPage as WorkspacePage)) {
       localStorage.removeItem("pendingDashboardPage");
-      return "organizationDetails";
+      return pendingPage as WorkspacePage;
     }
     return "overview";
   });
   const [data, setData] = useState<any[]>([]);
+  const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [_timerTick, setTimerTick] = useState(0);
   const [overview, setOverview] = useState<OrganizationOverview>(emptyOverview);
   const [task, setTask] = useState("");
   const [hours, setHours] = useState("");
@@ -151,6 +210,18 @@ export default function Dashboard({ token, user }: DashboardProps) {
   const [departmentError, setDepartmentError] = useState("");
   const [isAddingDepartment, setIsAddingDepartment] = useState(false);
   const [organizationAction, setOrganizationAction] = useState<OrganizationAction>(null);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskAssignee, setTaskAssignee] = useState("");
+  const [taskPriority, setTaskPriority] = useState<WorkflowTask["priority"]>("medium");
+  const [taskEstimate, setTaskEstimate] = useState("");
+  const [taskDeadline, setTaskDeadline] = useState("");
+  const [taskFiles, setTaskFiles] = useState<FileList | null>(null);
+  const [taskError, setTaskError] = useState("");
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [completionTaskId, setCompletionTaskId] = useState<number | null>(null);
+  const [completionReport, setCompletionReport] = useState("");
+  const [completionBlockers, setCompletionBlockers] = useState("");
 
   const handleAuthFailure = (status: number) => {
     if (status === 401 || status === 403) {
@@ -194,10 +265,32 @@ export default function Dashboard({ token, user }: DashboardProps) {
     setOverview(payload);
   };
 
+  const loadWorkflowTasks = async () => {
+    const res = await fetch(TASK_URL, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const payload = await res.json();
+    if (!res.ok) {
+      if (handleAuthFailure(res.status)) return;
+      console.error("Failed to load workflow tasks:", payload);
+      setWorkflowTasks([]);
+      return;
+    }
+
+    setWorkflowTasks(Array.isArray(payload) ? payload : []);
+  };
+
   useEffect(() => {
     loadTimesheets();
     loadOrganization();
+    loadWorkflowTasks();
   }, [token]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setTimerTick((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const add = async () => {
     if (!task.trim() || !hours) return;
@@ -216,6 +309,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
     setHours("");
     await loadTimesheets();
     await loadOrganization();
+    await loadWorkflowTasks();
     setIsSaving(false);
   };
 
@@ -322,7 +416,10 @@ export default function Dashboard({ token, user }: DashboardProps) {
     }
   };
 
-  const selectOrganization = async (organizationIdValue: number | string) => {
+  const selectOrganization = async (
+    organizationIdValue: number | string,
+    nextPage: WorkspacePage = "organizationDetails",
+  ) => {
     try {
       const response = await fetch(`${API_BASE}/organization/select`, {
         method: "POST",
@@ -338,7 +435,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
 
       localStorage.setItem("appToken", payload.token);
       localStorage.setItem("appUser", JSON.stringify(payload.user));
-      localStorage.setItem("pendingDashboardPage", "organizationDetails");
+      localStorage.setItem("pendingDashboardPage", nextPage);
       window.setTimeout(() => window.location.reload(), 250);
     } catch (error) {
       const err = error as Error;
@@ -381,21 +478,118 @@ export default function Dashboard({ token, user }: DashboardProps) {
     }
   };
 
+  const createWorkflowTask = async () => {
+    if (!taskTitle.trim() || !taskAssignee) {
+      setTaskError("Task title and assignee are required.");
+      return;
+    }
+
+    try {
+      setTaskError("");
+      setIsCreatingTask(true);
+      const formData = new FormData();
+      formData.append("title", taskTitle);
+      formData.append("description", taskDescription);
+      formData.append("assignedTo", taskAssignee);
+      formData.append("priority", taskPriority);
+      formData.append("estimatedHours", taskEstimate);
+      formData.append("deadlineAt", taskDeadline);
+      if (taskFiles) {
+        Array.from(taskFiles).forEach((file) => formData.append("attachments", file));
+      }
+
+      const response = await fetch(TASK_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to create task.");
+
+      setTaskTitle("");
+      setTaskDescription("");
+      setTaskAssignee("");
+      setTaskPriority("medium");
+      setTaskEstimate("");
+      setTaskDeadline("");
+      setTaskFiles(null);
+      const fileInput = document.getElementById("task-attachments") as HTMLInputElement | null;
+      if (fileInput) fileInput.value = "";
+      await loadWorkflowTasks();
+      setActivePage("tasks");
+    } catch (error) {
+      const err = error as Error;
+      setTaskError(err.message);
+    } finally {
+      setIsCreatingTask(false);
+    }
+  };
+
+  const runTaskAction = async (taskId: number, action: "start" | "stop") => {
+    const response = await fetch(`${TASK_URL}/${taskId}/${action}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const payload = await response.json();
+      setTaskError(payload.error || "Task action failed.");
+      return;
+    }
+    await loadWorkflowTasks();
+  };
+
+  const submitTaskCompletion = async (taskId: number) => {
+    if (!completionReport.trim()) {
+      setTaskError("Completion report is required.");
+      return;
+    }
+
+    const response = await fetch(`${TASK_URL}/${taskId}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        completionReport,
+        blockers: completionBlockers,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      setTaskError(payload.error || "Unable to complete task.");
+      return;
+    }
+
+    setTaskError("");
+    setCompletionTaskId(null);
+    setCompletionReport("");
+    setCompletionBlockers("");
+    await loadWorkflowTasks();
+  };
+
   const totalHours = data.reduce((sum, item) => sum + Number(item.hours || 0), 0);
-  const completedTasks = data.length;
-  const activeTasks = data.length > 0 ? Math.min(data.length, 3) : 0;
-  const pendingTasks = 0;
+  const completedTasks = workflowTasks.filter((item) => item.status === "completed").length;
+  const pendingWorkflowTasks = workflowTasks.filter((item) => item.status === "pending");
+  const activeWorkflowTasks = workflowTasks.filter((item) => item.status === "in_progress");
+  const completedWorkflowTasks = workflowTasks.filter((item) => item.status === "completed");
+  const myAssignedTasks = workflowTasks.filter((item) => item.assignedTo.id === user.id);
+  const assignedByMeTasks = workflowTasks.filter((item) => item.assignedBy.id === user.id);
+  const activeTasks = activeWorkflowTasks.length;
+  const pendingTasks = pendingWorkflowTasks.length;
   const averageHours = completedTasks > 0 ? Math.round((totalHours / completedTasks) * 10) / 10 : 0;
   const hasOrganization = Boolean(overview.organization);
   const isOrgAdmin = user.role === "ceo" || user.role === "manager";
   const organization = overview.organization;
   const isOrganizationArea = [
+    "createTask",
     "createOrganization",
     "organizationDetails",
     "employees",
     "teams",
     "departments",
   ].includes(activePage);
+  const showOrganizationTopNav = isOrganizationArea && activePage !== "createTask";
   const firstName = user.name.trim().split(/\s+/)[0] || "My";
   const personalWorkspaceName = `${firstName}'s Workspace`;
   const visibleWorkspacePages = workspacePages;
@@ -413,8 +607,32 @@ export default function Dashboard({ token, user }: DashboardProps) {
     { label: "Total Hours", value: totalHours, note: `${averageHours}h average`, tone: "neutral" },
   ];
   const recentEntries = data.slice(0, 4);
-  const activeTaskEntries = data.slice(0, 3);
-  const completedTaskEntries = data.slice(3, 9);
+  const activeTaskEntries = activeWorkflowTasks;
+  const completedTaskEntries = completedWorkflowTasks;
+  const taskStatusPages = {
+    taskPending: {
+      eyebrow: "Pending Tasks",
+      title: "Pending",
+      count: pendingTasks,
+      empty: "No pending tasks yet.",
+      items: pendingWorkflowTasks,
+    },
+    taskProgress: {
+      eyebrow: "Active Tasks",
+      title: "In progress",
+      count: activeTasks,
+      empty: "No active work right now.",
+      items: activeTaskEntries,
+    },
+    taskCompleted: {
+      eyebrow: "Completed Tasks",
+      title: "Completed",
+      count: completedWorkflowTasks.length,
+      empty: "Completed task reports will show here.",
+      items: completedTaskEntries,
+    },
+  } as const;
+  const selectedTask = workflowTasks.find((item) => item.id === selectedTaskId) || null;
 
   const createWorkspaceCard = (
     <section className="workspace-card onboarding-action-card">
@@ -512,6 +730,156 @@ export default function Dashboard({ token, user }: DashboardProps) {
     </button>
   );
 
+  const renderWorkflowTaskCard = (item: WorkflowTask) => {
+    const isTaskInActiveOrganization = item.organization.id === organization?.id;
+    const taskPage =
+      item.status === "pending" ? "taskPending" : item.status === "in_progress" ? "taskProgress" : "taskCompleted";
+    const runningSeconds = item.startedAt
+      ? Math.floor((Date.now() - new Date(item.startedAt).getTime()) / 1000)
+      : 0;
+    const trackedSeconds = item.totalSeconds + runningSeconds;
+
+    return (
+      <div
+        className={`task-board-card workflow-task-card priority-${item.priority}`}
+        key={item.id}
+        onClick={() => {
+          if (!isTaskInActiveOrganization) {
+            selectOrganization(item.organization.id, taskPage);
+            return;
+          }
+          setSelectedTaskId(item.id);
+          setActivePage("taskDetails");
+        }}
+        role="button"
+        tabIndex={0}
+      >
+        <div className="workflow-task-card-top">
+          <span>{item.priority}</span>
+          <small>{formatDate(item.deadlineAt)}</small>
+        </div>
+        <button
+          className="task-org-chip"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (isTaskInActiveOrganization) {
+              setActivePage("organizationDetails");
+            } else {
+              selectOrganization(item.organization.id, taskPage);
+            }
+          }}
+          type="button"
+        >
+          {item.organization.name} · {item.organization.orgCode}
+        </button>
+        <strong>{item.title}</strong>
+        {item.description && <p>{item.description}</p>}
+        <div className="workflow-task-meta">
+          <span>To: {item.assignedTo.name}</span>
+          <span>By: {item.assignedBy.name}</span>
+          <span>{formatDuration(trackedSeconds)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTaskDetailPage = (item: WorkflowTask) => {
+    const isMine = item.assignedTo.id === user.id;
+    const runningSeconds = item.startedAt
+      ? Math.floor((Date.now() - new Date(item.startedAt).getTime()) / 1000)
+      : 0;
+    const trackedSeconds = item.totalSeconds + runningSeconds;
+
+    return (
+      <section className="workspace-grid single-panel task-status-page">
+        <div className="organization-page-header">
+          <div>
+            <p className="eyebrow">Task Details</p>
+            <h2>{item.title}</h2>
+          </div>
+          <button className="btn btn-secondary" type="button" onClick={() => setActivePage(item.status === "pending" ? "taskPending" : item.status === "in_progress" ? "taskProgress" : "taskCompleted")}>
+            Back
+          </button>
+        </div>
+
+        <div className={`workspace-card workflow-task-card task-detail-card priority-${item.priority}`}>
+          <div className="workflow-task-card-top">
+            <span>{item.priority}</span>
+            <small>{formatDate(item.deadlineAt)}</small>
+          </div>
+          <button className="task-org-chip" onClick={() => setActivePage("organizationDetails")} type="button">
+            {item.organization.name} · {item.organization.orgCode}
+          </button>
+          <strong>{item.title}</strong>
+          {item.description && <p>{item.description}</p>}
+          <div className="workflow-task-meta">
+            <span>To: {item.assignedTo.name}</span>
+            <span>By: {item.assignedBy.name}</span>
+            <span>{formatDuration(trackedSeconds)}</span>
+          </div>
+          {item.attachments.length > 0 && (
+            <div className="task-attachment-list">
+              {item.attachments.map((attachment) => (
+                <a href={`${API_BASE}${attachment.url}`} key={attachment.id} rel="noreferrer" target="_blank">
+                  {attachment.originalName}
+                </a>
+              ))}
+            </div>
+          )}
+          {item.status !== "completed" && isMine && (
+            <div className="task-action-row">
+              {item.startedAt ? (
+                <button className="btn btn-secondary" onClick={() => runTaskAction(item.id, "stop")} type="button">
+                  Stop Timer
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => runTaskAction(item.id, "start")} type="button">
+                  Start Timer
+                </button>
+              )}
+              <button className="btn btn-secondary" onClick={() => setCompletionTaskId(item.id)} type="button">
+                End Task
+              </button>
+            </div>
+          )}
+          {completionTaskId === item.id && (
+            <div className="completion-panel">
+              <textarea
+                className="input"
+                placeholder="Write your completion report: what was done, issues, notes for the task owner..."
+                rows={4}
+                value={completionReport}
+                onChange={(event) => setCompletionReport(event.target.value)}
+              />
+              <textarea
+                className="input"
+                placeholder="Blockers or issues faced (optional)"
+                rows={3}
+                value={completionBlockers}
+                onChange={(event) => setCompletionBlockers(event.target.value)}
+              />
+              <div className="task-action-row">
+                <button className="btn btn-primary" onClick={() => submitTaskCompletion(item.id)} type="button">
+                  Submit Report
+                </button>
+                <button className="btn btn-secondary" onClick={() => setCompletionTaskId(null)} type="button">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {item.status === "completed" && (
+            <div className="completion-summary">
+              <span>Submitted report</span>
+              <p>{item.completionReport || "No report text."}</p>
+              {item.blockers && <small>Issues: {item.blockers}</small>}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  };
+
   const noOrganizationActions = (
     <section className="no-organization-actions">
       {createWorkspaceCard}
@@ -577,7 +945,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
       )}
 
       <div className="dashboard-wrap workspace-dashboard">
-        {isOrganizationArea && organizationTopNav}
+        {showOrganizationTopNav && organizationTopNav}
 
         {activePage === "overview" && (
           <>
@@ -643,55 +1011,138 @@ export default function Dashboard({ token, user }: DashboardProps) {
         )}
 
         {activePage === "tasks" && (
-          <section className="workspace-grid task-board-grid">
-            <div className="workspace-card task-column">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Tasks</p>
-                  <h2>Pending</h2>
+          <>
+            <section className="workspace-grid single-panel task-toolbar-grid">
+              <div className="workspace-card task-toolbar-card">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Workflow</p>
+                    <h2>Task control center</h2>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => setActivePage("createTask")} type="button">
+                    Create Task
+                  </button>
                 </div>
-                <span className="count-pill">{pendingTasks}</span>
+                <div className="task-insight-grid">
+                  <InfoTile label="Assigned to me" value={String(myAssignedTasks.length)} />
+                  <InfoTile label="Created by me" value={String(assignedByMeTasks.length)} />
+                  <InfoTile label="Running now" value={String(activeTasks)} />
+                  <InfoTile label="Completed" value={String(completedWorkflowTasks.length)} />
+                </div>
               </div>
-              <div className="task-board-list">
-                <p className="muted">No pending tasks yet. Real task assignments will appear here.</p>
+            </section>
+
+            <section className="workspace-grid task-summary-grid">
+              <button className="workspace-card task-summary-card" onClick={() => setActivePage("taskPending")} type="button">
+                <span>Tasks</span>
+                <strong>Pending</strong>
+                <small>{pendingTasks}</small>
+                <p>New assignments waiting to be started.</p>
+              </button>
+
+              <button className="workspace-card task-summary-card" onClick={() => setActivePage("taskProgress")} type="button">
+                <span>Tasks</span>
+                <strong>In progress</strong>
+                <small>{activeTasks}</small>
+                <p>Running work with active timers.</p>
+              </button>
+
+              <button className="workspace-card task-summary-card" onClick={() => setActivePage("taskCompleted")} type="button">
+                <span>Tasks</span>
+                <strong>Completed</strong>
+                <small>{completedWorkflowTasks.length}</small>
+                <p>Submitted work reports and finished tasks.</p>
+              </button>
+            </section>
+          </>
+        )}
+
+        {(activePage === "taskPending" || activePage === "taskProgress" || activePage === "taskCompleted") && (
+          <section className="workspace-grid single-panel task-status-page">
+            <div className="organization-page-header">
+              <div>
+                <p className="eyebrow">{taskStatusPages[activePage].eyebrow}</p>
+                <h2>{taskStatusPages[activePage].title}</h2>
               </div>
+              <button className="btn btn-secondary" type="button" onClick={() => setActivePage("tasks")}>
+                Back
+              </button>
             </div>
 
-            <div className="workspace-card task-column">
+            <div className="workspace-card">
               <div className="section-heading">
                 <div>
                   <p className="eyebrow">Tasks</p>
-                  <h2>In progress</h2>
+                  <h2>{taskStatusPages[activePage].title}</h2>
                 </div>
-                <span className="count-pill">{activeTasks}</span>
+                <span className="count-pill">{taskStatusPages[activePage].count}</span>
               </div>
-              <div className="task-board-list">
-                {activeTaskEntries.length === 0 && <p className="muted">Add time entries to start building your work queue.</p>}
-                {activeTaskEntries.map((entry) => (
-                  <div className="task-board-card" key={entry.id}>
-                    <strong>{entry.task}</strong>
-                    <span>{entry.hours}h logged</span>
-                  </div>
-                ))}
+              <div className="task-detail-list">
+                {taskStatusPages[activePage].items.length === 0 && <p className="muted">{taskStatusPages[activePage].empty}</p>}
+                {taskStatusPages[activePage].items.map(renderWorkflowTaskCard)}
               </div>
             </div>
+          </section>
+        )}
 
-            <div className="workspace-card task-column">
+        {activePage === "taskDetails" && selectedTask && renderTaskDetailPage(selectedTask)}
+
+        {activePage === "createTask" && (
+          <section className="workspace-grid single-panel create-task-page">
+            <div className="organization-page-header">
+              <div>
+                <p className="eyebrow">Task Assignment</p>
+                <h2>Create task</h2>
+              </div>
+              <button className="btn btn-secondary" type="button" onClick={() => setActivePage("tasks")}>
+                Back
+              </button>
+            </div>
+
+            <div className="workspace-card task-create-card">
               <div className="section-heading">
                 <div>
-                  <p className="eyebrow">Tasks</p>
-                  <h2>Completed</h2>
+                  <p className="eyebrow">New Workflow Item</p>
+                  <h2>Detailed task brief</h2>
                 </div>
-                <span className="count-pill">{completedTasks}</span>
               </div>
-              <div className="task-board-list">
-                {completedTaskEntries.length === 0 && <p className="muted">Completed task history will show here.</p>}
-                {completedTaskEntries.map((entry) => (
-                  <div className="task-board-card" key={entry.id}>
-                    <strong>{entry.task}</strong>
-                    <span>{entry.hours}h logged</span>
-                  </div>
-                ))}
+              <div className="task-create-form">
+                <input className="input" placeholder="Task title" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} />
+                <select className="input" value={taskAssignee} onChange={(event) => setTaskAssignee(event.target.value)}>
+                  <option value="">Assign to employee</option>
+                  {overview.employees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.name} - {employee.department || "Unassigned"}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  className="input"
+                  placeholder="Task details, expected output, context, acceptance criteria..."
+                  rows={6}
+                  value={taskDescription}
+                  onChange={(event) => setTaskDescription(event.target.value)}
+                />
+                <div className="task-create-row">
+                  <select className="input" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as WorkflowTask["priority"])}>
+                    <option value="low">Low priority</option>
+                    <option value="medium">Medium priority</option>
+                    <option value="high">High priority</option>
+                    <option value="urgent">Urgent priority</option>
+                  </select>
+                  <input className="input" placeholder="Estimated hours" type="number" min="0" step="0.5" value={taskEstimate} onChange={(event) => setTaskEstimate(event.target.value)} />
+                  <input className="input" type="datetime-local" value={taskDeadline} onChange={(event) => setTaskDeadline(event.target.value)} />
+                </div>
+                <label className="task-file-drop">
+                  <span>Attach files</span>
+                  <small>PDF, image, ZIP, document, or supporting material. Up to 8 files.</small>
+                  <input id="task-attachments" multiple type="file" onChange={(event) => setTaskFiles(event.target.files)} />
+                </label>
+                <button className="btn btn-primary" onClick={createWorkflowTask} disabled={isCreatingTask || !overview.organization} type="button">
+                  {isCreatingTask ? "Creating Task..." : "Assign Task"}
+                </button>
+                {!overview.organization && <p className="muted">Select or create an organization before assigning tasks.</p>}
+                {taskError && <p className="error-text">{taskError}</p>}
               </div>
             </div>
           </section>
@@ -788,16 +1239,6 @@ export default function Dashboard({ token, user }: DashboardProps) {
 
         {organization && activePage === "organizationDetails" && (
           <section className="organization-details-page">
-            <div className="organization-page-header">
-              <div>
-                <p className="eyebrow">Organization</p>
-                <h2>{organization.name}</h2>
-              </div>
-              <button className="btn btn-secondary" type="button" onClick={() => setActivePage("myOrganization")}>
-                Back
-              </button>
-            </div>
-
             <section className="workspace-hero-panel organization-detail-hero">
               <div>
                 <p className="eyebrow">Workspace Profile</p>
