@@ -1,7 +1,8 @@
 :root {
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #0f172a;
-  background: #f8fafc;
+  color: #f8fafc;
+  background: #050505;
+  overscroll-behavior: none;
 }
 
 * {
@@ -10,6 +11,9 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
+  background: #050505;
+  overscroll-behavior: none;
 }
 
 h1,
@@ -20,6 +24,7 @@ p {
 
 #root {
   min-height: 100vh;
+  background: #050505;
 }
 
 .container {
@@ -37,19 +42,24 @@ p {
 
 .topbar {
   position: sticky;
-  top: 0;
+  top: 18px;
   z-index: 20;
-  background: rgba(5, 5, 5, 0.92);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
-  backdrop-filter: blur(16px);
+  padding: 0 24px;
+  background: transparent;
 }
 
 .topbar-inner {
-  height: 64px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 0 20px;
+  background: rgba(28, 28, 30, 0.84);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
 }
 
 .topbar h2 {
@@ -89,7 +99,7 @@ p {
 }
 
 .main-content {
-  padding-top: 36px;
+  padding-top: 54px;
   padding-bottom: 40px;
 }
 
@@ -237,16 +247,28 @@ p {
 }
 
 .workspace-shell {
-  display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: 24px;
+  --workspace-sidebar-width: 250px;
+  display: block;
+  padding-left: calc(var(--workspace-sidebar-width) + 24px);
   align-items: start;
 }
 
+.workspace-shell.no-organization-shell {
+  --workspace-sidebar-width: 220px;
+}
+
+.workspace-shell.organization-area-shell {
+  padding-left: 0;
+}
+
 .workspace-sidebar {
-  position: sticky;
+  position: fixed;
+  left: max(24px, calc((100vw - 1280px) / 2));
   top: 96px;
+  z-index: 20;
+  width: var(--workspace-sidebar-width);
   min-height: calc(100vh - 132px);
+  max-height: calc(100vh - 132px);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -313,6 +335,69 @@ p {
   font-size: 12px;
 }
 
+.organization-top-nav {
+  position: sticky;
+  top: 96px;
+  z-index: 18;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(10, 10, 10, 0.82);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.organization-top-nav button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #a3a3a3;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.organization-top-nav button:hover,
+.organization-top-nav button.active {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.organization-top-nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.organization-top-nav .organization-create-nav-button {
+  color: #111827;
+  border-color: rgba(255, 255, 255, 0.7);
+  background: #e5e7eb;
+}
+
+.organization-top-nav .organization-create-nav-button:hover,
+.organization-top-nav .organization-create-nav-button.active {
+  color: #111827;
+  background: #ffffff;
+}
+
+.organization-top-nav .organization-exit-button {
+  margin-left: auto;
+  color: #111827;
+  background: #e5e7eb;
+}
+
+.organization-top-nav .organization-exit-button:hover {
+  color: #111827;
+  background: #ffffff;
+}
+
 .workspace-dashboard {
   color: #f8fafc;
 }
@@ -341,9 +426,21 @@ p {
   margin-bottom: 8px;
 }
 
+.personal-hero-panel {
+  align-items: flex-start;
+  background:
+    radial-gradient(circle at 78% 10%, rgba(255, 255, 255, 0.14), transparent 24%),
+    linear-gradient(145deg, rgba(8, 8, 8, 0.96), rgba(24, 24, 27, 0.94));
+}
+
+.personal-hero-panel h1 {
+  font-size: 44px;
+}
+
 .workspace-hero-copy {
   color: #cbd5e1;
   line-height: 1.6;
+  max-width: 760px;
 }
 
 .workspace-hero-meta {
@@ -365,6 +462,68 @@ p {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+}
+
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-kpi-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 10px;
+  min-height: 142px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.12), transparent 28%),
+    linear-gradient(145deg, rgba(12, 12, 12, 0.95), rgba(39, 39, 42, 0.9));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+}
+
+.dashboard-kpi-card::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d4d4d8;
+  opacity: 0.72;
+}
+
+.dashboard-kpi-card.warning::after {
+  background: #fbbf24;
+}
+
+.dashboard-kpi-card.info::after {
+  background: #93c5fd;
+}
+
+.dashboard-kpi-card.success::after {
+  background: #86efac;
+}
+
+.dashboard-kpi-card span,
+.dashboard-kpi-card small {
+  color: #a3a3a3;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dashboard-kpi-card strong {
+  font-size: 42px;
+  line-height: 1;
+}
+
+.compact-org-stats .workspace-stat-card {
+  min-height: 104px;
 }
 
 .workspace-stat-card {
@@ -389,6 +548,48 @@ p {
   padding: 26px;
 }
 
+.no-organization-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.onboarding-action-card {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+  min-height: 100%;
+}
+
+.onboarding-action-card h2 {
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.onboarding-form {
+  display: grid;
+  gap: 14px;
+}
+
+.onboarding-form label {
+  display: grid;
+  gap: 7px;
+  color: #e5e7eb;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.onboarding-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.onboarding-form .btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
 .workspace-grid {
   display: grid;
   grid-template-columns: minmax(360px, 0.8fr) minmax(520px, 1.2fr);
@@ -397,6 +598,32 @@ p {
 
 .workspace-grid.single-panel {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.overview-ops-grid {
+  grid-template-columns: minmax(360px, 0.9fr) minmax(520px, 1.1fr);
+}
+
+.task-board-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.my-organization-grid,
+.reports-grid,
+.settings-grid {
+  grid-template-columns: minmax(420px, 1.15fr) minmax(360px, 0.85fr);
+}
+
+.organization-empty-grid {
+  grid-template-columns: minmax(420px, 0.75fr) minmax(420px, 1fr);
+}
+
+.organization-connected-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.reports-kpi-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .teams-elements-grid {
@@ -450,7 +677,11 @@ p {
 .department-list,
 .employee-table,
 .team-list,
-.elements-grid {
+.elements-grid,
+.status-list,
+.recent-work-list,
+.task-board-list,
+.organization-detail-grid {
   display: grid;
   gap: 10px;
 }
@@ -459,10 +690,196 @@ p {
 .employee-row,
 .timesheet-row-card,
 .team-card,
-.element-card {
+.element-card,
+.status-row,
+.recent-work-item,
+.task-board-card,
+.info-tile {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.06);
+}
+
+.task-column {
+  min-height: 440px;
+}
+
+.count-pill {
+  display: inline-grid;
+  min-width: 34px;
+  min-height: 30px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.task-board-card,
+.info-tile {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.task-board-card span,
+.info-tile span {
+  color: #a3a3a3;
+  font-size: 13px;
+}
+
+.task-board-card strong,
+.info-tile strong {
+  color: #ffffff;
+}
+
+.organization-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.organization-select-button {
+  width: 100%;
+  min-height: 120px;
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.12), transparent 24%),
+    rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.organization-select-button:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background:
+    radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.18), transparent 24%),
+    rgba(255, 255, 255, 0.1);
+}
+
+.organization-select-button span,
+.organization-select-button small {
+  color: #a3a3a3;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.organization-select-button strong {
+  font-size: 28px;
+}
+
+.organization-empty-state {
+  display: grid;
+  gap: 18px;
+}
+
+.organization-connected-actions {
+  display: grid;
+  gap: 14px;
+}
+
+.organization-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.organization-page-actions .btn,
+.organization-connected-actions .btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.organization-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.organization-action-buttons .btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.organization-action-panel {
+  min-width: 0;
+}
+
+.organization-action-panel .onboarding-action-card {
+  min-height: auto;
+}
+
+.create-organization-page {
+  max-width: 760px;
+}
+
+.organization-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.organization-page-header h2 {
+  color: #ffffff;
+  font-size: 32px;
+}
+
+.organization-details-page {
+  display: grid;
+  gap: 16px;
+}
+
+.organization-detail-hero {
+  background:
+    radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.14), transparent 25%),
+    linear-gradient(145deg, rgba(8, 8, 8, 0.96), rgba(31, 41, 55, 0.92));
+}
+
+.organization-details-grid {
+  grid-template-columns: minmax(520px, 1.1fr) minmax(360px, 0.9fr);
+}
+
+.status-row,
+.recent-work-item {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.status-row span,
+.recent-work-item span,
+.recent-work-item small {
+  color: #a3a3a3;
+  font-size: 13px;
+}
+
+.status-row strong,
+.recent-work-item strong {
+  color: #ffffff;
+}
+
+.recent-work-item div {
+  display: grid;
+  gap: 4px;
+}
+
+.personal-work-summary {
+  max-width: 720px;
 }
 
 .team-card {
@@ -859,6 +1276,37 @@ p {
 .timesheet-landing-shell {
   overflow: hidden;
   height: 100vh;
+}
+
+.timesheet-landing-shell.auth-only-landing {
+  min-height: 100vh;
+  height: auto;
+  overflow: auto;
+}
+
+.auth-login-landing {
+  overflow: hidden;
+  height: 100vh;
+}
+
+.login-only-hero {
+  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+}
+
+.login-preview {
+  min-height: 360px;
+  display: grid;
+  align-content: center;
+  gap: 18px;
+}
+
+.login-workflow {
+  margin-top: 10px;
+}
+
+.auth-only-landing .auth-experience {
+  min-height: 100vh;
+  padding: 32px 24px;
 }
 
 .timesheet-landing {
@@ -1266,6 +1714,18 @@ p {
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.46);
 }
 
+.auth-form-brand {
+  display: inline-block;
+  margin-bottom: 22px;
+  color: transparent;
+  background: linear-gradient(135deg, #ffffff, #71717a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
 .form-back-button {
   width: 38px;
   height: 38px;
@@ -1414,6 +1874,22 @@ p {
   color: #d1d5db;
 }
 
+.auth-switch-link {
+  width: 100%;
+  margin-top: 14px;
+  border: 0;
+  color: #d4d4d8;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-switch-link:hover {
+  color: #ffffff;
+}
+
 .success-banner {
   display: grid;
   gap: 4px;
@@ -1519,7 +1995,21 @@ p {
   .workspace-join-card,
   .join-org-controls,
   .workspace-shell,
+  .workspace-shell.no-organization-shell,
   .workspace-grid,
+  .no-organization-actions,
+  .onboarding-form-row,
+  .dashboard-kpi-grid,
+  .overview-ops-grid,
+  .task-board-grid,
+  .my-organization-grid,
+  .organization-empty-grid,
+  .organization-connected-grid,
+  .organization-details-grid,
+  .reports-grid,
+  .settings-grid,
+  .reports-kpi-grid,
+  .organization-detail-grid,
   .workspace-stats-grid,
   .department-form,
   .employee-row,
@@ -1529,6 +2019,8 @@ p {
 
   .workspace-sidebar {
     position: static;
+    width: auto;
+    max-height: none;
     min-height: auto;
   }
 

@@ -1,14 +1,114 @@
 import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import { connectDB } from "../config/db";
 
 type AppUser = {
   userId: number;
+  email?: string;
+  name?: string;
+  provider?: "local" | "microsoft";
   organizationId?: number | null;
   organizationCode?: string | null;
   role?: string | null;
+  department?: string | null;
 };
 
 const getAppUser = (req: Request) => (req as Request & { appUser?: AppUser }).appUser;
+
+const issueAppToken = (payload: {
+  userId: number;
+  email: string;
+  name: string;
+  provider: "local" | "microsoft";
+  organizationId?: number | null;
+  organizationCode?: string | null;
+  role?: string | null;
+  department?: string | null;
+}) => {
+  const secret = process.env.APP_JWT_SECRET || "dev-secret-change-me";
+  return jwt.sign(payload, secret, { expiresIn: "7d" });
+};
+
+const normalizeOrganizationCode = (value: string) => value.trim().toUpperCase();
+
+export const createOrganization = async (req: Request, res: Response) => {
+  try {
+    const appUser = getAppUser(req);
+    if (!appUser?.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (appUser.organizationId || appUser.organizationCode) {
+      return res.status(409).json({ error: "This user already belongs to an organization." });
+    }
+
+    const { organizationName, organizationId, industry, teamSize } = req.body as {
+      organizationName?: string;
+      organizationId?: string;
+      industry?: string;
+      teamSize?: string;
+    };
+
+    if (!organizationName?.trim() || !organizationId?.trim()) {
+      return res.status(400).json({ error: "Organization name and Organization ID are required." });
+    }
+
+    const orgCode = normalizeOrganizationCode(organizationId);
+    if (!/^ORG-[A-Z0-9]{4,12}$/.test(orgCode)) {
+      return res
+        .status(400)
+        .json({ error: "Organization ID must look like ORG-WIMETRIX or ORG-1234." });
+    }
+
+    const pool = await connectDB();
+    const existingCode = await pool.query(
+      `SELECT id FROM organizations WHERE "orgCode" = $1 LIMIT 1`,
+      [orgCode],
+    );
+    if (existingCode.rows.length > 0) {
+      return res.status(409).json({ error: "Organization ID is already taken." });
+    }
+
+    const insertedOrg = await pool.query(
+      `INSERT INTO organizations ("orgCode", name, "companyEmail", industry, "teamSize")
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, "orgCode", name, "companyEmail", industry, "teamSize"`,
+      [
+        orgCode,
+        organizationName.trim(),
+        appUser.email || "",
+        industry?.trim() || null,
+        teamSize?.trim() || null,
+      ],
+    );
+
+    const organization = insertedOrg.rows[0];
+    const updatedUser = await pool.query(
+      `UPDATE users
+       SET "organizationId" = $1, "organizationCode" = $2, role = $3
+       WHERE id = $4
+       RETURNING id, name, email, provider, "organizationId", "organizationCode", role, department`,
+      [organization.id, organization.orgCode, "ceo", appUser.userId],
+    );
+
+    const user = updatedUser.rows[0];
+    const token = issueAppToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      provider: user.provider,
+      organizationId: user.organizationId,
+      organizationCode: user.organizationCode,
+      role: user.role,
+      department: user.department,
+    });
+
+    return res.status(201).json({ token, user, organization });
+  } catch (error) {
+    const err = error as Error;
+    return res.status(500).json({ error: err.message });
+  }
+};
 
 export const getOrganizationOverview = async (req: Request, res: Response) => {
   try {

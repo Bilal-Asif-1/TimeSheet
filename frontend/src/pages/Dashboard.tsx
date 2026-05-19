@@ -54,7 +54,22 @@ type DashboardProps = {
   user: AppUser;
 };
 
-type WorkspacePage = "overview" | "teams" | "elements" | "departments" | "employees" | "timesheets";
+type WorkspacePage =
+  | "overview"
+  | "tasks"
+  | "timesheets"
+  | "myOrganization"
+  | "teams"
+  | "departments"
+  | "employees"
+  | "approvals"
+  | "reports"
+  | "elements"
+  | "settings"
+  | "createOrganization"
+  | "organizationDetails";
+
+type OrganizationAction = "create" | "join" | null;
 
 const emptyOverview: OrganizationOverview = {
   organization: null,
@@ -65,12 +80,23 @@ const emptyOverview: OrganizationOverview = {
 
 const workspacePages: { id: WorkspacePage; label: string }[] = [
   { id: "overview", label: "Overview" },
-  { id: "teams", label: "Teams" },
-  { id: "elements", label: "Elements" },
-  { id: "departments", label: "Departments" },
-  { id: "employees", label: "Employees" },
+  { id: "tasks", label: "Tasks" },
   { id: "timesheets", label: "Timesheets" },
+  { id: "myOrganization", label: "Organizations" },
+  { id: "reports", label: "Reports" },
+  { id: "settings", label: "Settings" },
 ];
+
+const industries = ["Technology", "Finance", "Healthcare", "Education", "Retail", "Operations"];
+const teamSizes = ["1-10", "11-50", "51-200", "201-1000", "1000+"];
+
+const formatOrganizationId = (value: string) => {
+  const compactValue = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!compactValue) return "";
+
+  const suffix = compactValue.startsWith("ORG") ? compactValue.slice(3) : compactValue;
+  return `ORG-${suffix.slice(0, 12)}`;
+};
 
 export default function Dashboard({ token, user }: DashboardProps) {
   const [activePage, setActivePage] = useState<WorkspacePage>("overview");
@@ -87,10 +113,18 @@ export default function Dashboard({ token, user }: DashboardProps) {
   const [joinError, setJoinError] = useState("");
   const [joinSuccess, setJoinSuccess] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const [organizationName, setOrganizationName] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
+  const [industry, setIndustry] = useState(industries[0]);
+  const [teamSize, setTeamSize] = useState(teamSizes[1]);
+  const [organizationError, setOrganizationError] = useState("");
+  const [organizationSuccess, setOrganizationSuccess] = useState("");
+  const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
   const [departmentName, setDepartmentName] = useState("");
   const [departmentDescription, setDepartmentDescription] = useState("");
   const [departmentError, setDepartmentError] = useState("");
   const [isAddingDepartment, setIsAddingDepartment] = useState(false);
+  const [organizationAction, setOrganizationAction] = useState<OrganizationAction>(null);
 
   const handleAuthFailure = (status: number) => {
     if (status === 401 || status === 403) {
@@ -189,6 +223,45 @@ export default function Dashboard({ token, user }: DashboardProps) {
     setIsSaving(false);
   };
 
+  const createOrganization = async () => {
+    if (!organizationName.trim() || !organizationId.trim()) {
+      setOrganizationError("Organization name and Organization ID are required.");
+      return;
+    }
+
+    try {
+      setOrganizationError("");
+      setOrganizationSuccess("");
+      setIsCreatingOrganization(true);
+      const response = await fetch(`${API_BASE}/organization/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          organizationName,
+          organizationId,
+          industry,
+          teamSize,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to create organization.");
+
+      localStorage.setItem("appToken", payload.token);
+      localStorage.setItem("appUser", JSON.stringify(payload.user));
+      setOrganizationSuccess(`Created ${payload.organization.orgCode}. Refreshing workspace...`);
+      window.setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      const err = error as Error;
+      setOrganizationError(err.message);
+    } finally {
+      setIsCreatingOrganization(false);
+    }
+  };
+
   const joinOrganization = async () => {
     if (!joinOrgId.trim()) {
       setJoinError("Organization ID is required.");
@@ -259,8 +332,23 @@ export default function Dashboard({ token, user }: DashboardProps) {
   };
 
   const totalHours = data.reduce((sum, item) => sum + Number(item.hours || 0), 0);
+  const completedTasks = data.length;
+  const activeTasks = data.length > 0 ? Math.min(data.length, 3) : 0;
+  const pendingTasks = 0;
+  const averageHours = completedTasks > 0 ? Math.round((totalHours / completedTasks) * 10) / 10 : 0;
+  const hasOrganization = Boolean(overview.organization);
   const isOrgAdmin = user.role === "ceo" || user.role === "manager";
-  const orgName = overview.organization?.name || "Personal Workspace";
+  const organization = overview.organization;
+  const isOrganizationArea = [
+    "createOrganization",
+    "organizationDetails",
+    "employees",
+    "teams",
+    "departments",
+  ].includes(activePage);
+  const firstName = user.name.trim().split(/\s+/)[0] || "My";
+  const personalWorkspaceName = `${firstName}'s Workspace`;
+  const visibleWorkspacePages = workspacePages;
   const activeDepartments = overview.departments.slice(0, 4);
   const elementItems = [
     { label: "Workflow approvals", value: overview.organization ? "Ready" : "Locked" },
@@ -268,17 +356,85 @@ export default function Dashboard({ token, user }: DashboardProps) {
     { label: "Time policies", value: "Default" },
     { label: "Automation queue", value: "0 rules" },
   ];
+  const kpiCards = [
+    { label: "Pending Tasks", value: pendingTasks, note: "Awaiting assignment", tone: "warning" },
+    { label: "Active Tasks", value: activeTasks, note: "In progress", tone: "info" },
+    { label: "Completed Tasks", value: completedTasks, note: "Logged entries", tone: "success" },
+    { label: "Total Hours", value: totalHours, note: `${averageHours}h average`, tone: "neutral" },
+  ];
+  const recentEntries = data.slice(0, 4);
+  const activeTaskEntries = data.slice(0, 3);
+  const completedTaskEntries = data.slice(3, 9);
+
+  const createWorkspaceCard = (
+    <section className="workspace-card onboarding-action-card">
+      <div>
+        <p className="eyebrow">Create Workspace</p>
+        <h2>Start a new organization</h2>
+        <p className="muted">Create your company workspace and become the owner/admin.</p>
+      </div>
+      <div className="onboarding-form">
+        <label>
+          <span>Organization name</span>
+          <input
+            className="input"
+            placeholder="WiMetrix"
+            value={organizationName}
+            onChange={(event) => setOrganizationName(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>Organization ID</span>
+          <input
+            className="input"
+            placeholder="ORG-WIMETRIX"
+            value={organizationId}
+            onChange={(event) => setOrganizationId(formatOrganizationId(event.target.value))}
+          />
+        </label>
+        <div className="onboarding-form-row">
+          <label>
+            <span>Industry</span>
+            <select className="input" value={industry} onChange={(event) => setIndustry(event.target.value)}>
+              {industries.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Team size</span>
+            <select className="input" value={teamSize} onChange={(event) => setTeamSize(event.target.value)}>
+              {teamSizes.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <button className="btn btn-primary" onClick={createOrganization} disabled={isCreatingOrganization}>
+          {isCreatingOrganization ? "Creating..." : "Create Organization"}
+        </button>
+      </div>
+      {organizationError && <p className="error-text">{organizationError}</p>}
+      {organizationSuccess && <p className="success-text">{organizationSuccess}</p>}
+    </section>
+  );
 
   const joinWorkspaceCard = (
-    <section className="workspace-card workspace-join-card">
+    <section className="workspace-card onboarding-action-card">
       <div>
         <p className="eyebrow">Join Workspace</p>
-        <h2>Connect this user to an organization</h2>
-        <p className="muted">After login, employees can join using the Organization ID shared by their company.</p>
+        <h2>Join an existing organization</h2>
+        <p className="muted">Use the Organization ID shared by your company.</p>
       </div>
-      <div className="join-org-controls">
-        <input className="input" placeholder="ORG-X82KLM" value={joinOrgId} onChange={(event) => setJoinOrgId(event.target.value)} />
-        <input className="input" placeholder="Department" value={joinDepartment} onChange={(event) => setJoinDepartment(event.target.value)} />
+      <div className="onboarding-form">
+        <label>
+          <span>Organization ID</span>
+          <input className="input" placeholder="ORG-X82KLM" value={joinOrgId} onChange={(event) => setJoinOrgId(formatOrganizationId(event.target.value))} />
+        </label>
+        <label>
+          <span>Department</span>
+          <input className="input" placeholder="Engineering" value={joinDepartment} onChange={(event) => setJoinDepartment(event.target.value)} />
+        </label>
         <button className="btn btn-secondary" onClick={joinOrganization} disabled={isJoining}>
           {isJoining ? "Joining..." : "Join Organization"}
         </button>
@@ -288,40 +444,81 @@ export default function Dashboard({ token, user }: DashboardProps) {
     </section>
   );
 
+  const noOrganizationActions = (
+    <section className="no-organization-actions">
+      {createWorkspaceCard}
+      {joinWorkspaceCard}
+    </section>
+  );
+
+  const organizationTopNav = (
+    <div className="organization-top-nav">
+      <button
+        className={activePage === "organizationDetails" ? "active" : ""}
+        onClick={() => setActivePage(organization ? "organizationDetails" : "myOrganization")}
+        type="button"
+      >
+        {activePage === "myOrganization" || activePage === "createOrganization" ? "Organizations" : "Home"}
+      </button>
+      <button className={activePage === "employees" ? "active" : ""} disabled={!hasOrganization} onClick={() => setActivePage("employees")} type="button">
+        Members
+      </button>
+      <button className={activePage === "teams" ? "active" : ""} disabled={!hasOrganization} onClick={() => setActivePage("teams")} type="button">
+        Staff
+      </button>
+      <button className={activePage === "departments" ? "active" : ""} disabled={!hasOrganization} onClick={() => setActivePage("departments")} type="button">
+        Departments
+      </button>
+      {(activePage === "myOrganization" || activePage === "createOrganization") && (
+        <button
+          className={`organization-create-nav-button${activePage === "createOrganization" ? " active" : ""}`}
+          onClick={() => setActivePage("createOrganization")}
+          type="button"
+        >
+          Create Organization
+        </button>
+      )}
+      <button className="organization-exit-button" onClick={() => setActivePage("overview")} type="button">
+        Back to Dashboard
+      </button>
+    </div>
+  );
+
   return (
-    <div className="workspace-shell">
-      <aside className="workspace-sidebar">
-        <div className="sidebar-brand">TimeSheet</div>
-        <nav className="sidebar-nav" aria-label="Workspace sections">
-          {workspacePages.map((page) => (
-            <button
-              className={activePage === page.id ? "active" : ""}
-              key={page.id}
-              onClick={() => setActivePage(page.id)}
-              type="button"
-            >
-              {page.label}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-profile">
-          <span>{user.role || "employee"}</span>
-          <strong>{user.name}</strong>
-          <small>{overview.organization?.orgCode || "No organization"}</small>
-        </div>
-      </aside>
+    <div className={`workspace-shell${hasOrganization ? "" : " no-organization-shell"}${isOrganizationArea ? " organization-area-shell" : ""}`}>
+      {!isOrganizationArea && (
+        <aside className="workspace-sidebar">
+          <div className="sidebar-brand">Workspace</div>
+          <nav className="sidebar-nav" aria-label="Workspace sections">
+            {visibleWorkspacePages.map((page) => (
+              <button
+                className={activePage === page.id ? "active" : ""}
+                key={page.id}
+                onClick={() => setActivePage(page.id)}
+                type="button"
+              >
+                {page.label}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-profile">
+            <strong>{user.name}</strong>
+            <small>{user.email}</small>
+          </div>
+        </aside>
+      )}
 
       <div className="dashboard-wrap workspace-dashboard">
+        {isOrganizationArea && organizationTopNav}
+
         {activePage === "overview" && (
           <>
-            <section className="workspace-hero-panel">
+            <section className="workspace-hero-panel personal-hero-panel">
               <div>
-                <p className="eyebrow">TimeSheet Workspace</p>
-                <h1>{orgName}</h1>
+                <p className="eyebrow">Overview</p>
+                <h1>{personalWorkspaceName}</h1>
                 <p className="workspace-hero-copy">
-                  {overview.organization
-                    ? `Organization ID ${overview.organization.orgCode} - ${overview.organization.industry || "Operations"} workspace`
-                    : "You are in a personal workspace. Join an organization to unlock company departments and employees."}
+                  Track your work, tasks, time, and recent activity from one focused dashboard.
                 </p>
               </div>
               <div className="workspace-hero-meta">
@@ -331,15 +528,271 @@ export default function Dashboard({ token, user }: DashboardProps) {
               </div>
             </section>
 
-            <section className="workspace-stats-grid">
-              <StatCard label="Employees" value={overview.stats.employees} />
-              <StatCard label="Departments" value={overview.stats.departments} />
-              <StatCard label="Org Hours" value={overview.stats.totalHours} />
-              <StatCard label="My Hours" value={totalHours} />
+            <section className="dashboard-kpi-grid">
+              {kpiCards.map((card) => (
+                <KpiCard key={card.label} label={card.label} note={card.note} tone={card.tone} value={card.value} />
+              ))}
             </section>
 
-            {!overview.organization && joinWorkspaceCard}
+            <section className="workspace-grid overview-ops-grid">
+              <div className="workspace-card">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Work Queue</p>
+                    <h2>Task status</h2>
+                  </div>
+                </div>
+                <div className="status-list">
+                  <StatusRow label="Pending review" value={pendingTasks} />
+                  <StatusRow label="Active work" value={activeTasks} />
+                  <StatusRow label="Completed logs" value={completedTasks} />
+                </div>
+              </div>
+
+              <div className="workspace-card">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Recent Activity</p>
+                    <h2>Latest logged work</h2>
+                  </div>
+                </div>
+                <div className="recent-work-list">
+                  {recentEntries.length === 0 && <p className="muted">No work logged yet.</p>}
+                  {recentEntries.map((entry) => (
+                    <div className="recent-work-item" key={entry.id}>
+                      <div>
+                        <strong>{entry.task}</strong>
+                        <span>Completed log</span>
+                      </div>
+                      <small>{entry.hours}h</small>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
           </>
+        )}
+
+        {activePage === "tasks" && (
+          <section className="workspace-grid task-board-grid">
+            <div className="workspace-card task-column">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Tasks</p>
+                  <h2>Pending</h2>
+                </div>
+                <span className="count-pill">{pendingTasks}</span>
+              </div>
+              <div className="task-board-list">
+                <p className="muted">No pending tasks yet. Real task assignments will appear here.</p>
+              </div>
+            </div>
+
+            <div className="workspace-card task-column">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Tasks</p>
+                  <h2>In progress</h2>
+                </div>
+                <span className="count-pill">{activeTasks}</span>
+              </div>
+              <div className="task-board-list">
+                {activeTaskEntries.length === 0 && <p className="muted">Add time entries to start building your work queue.</p>}
+                {activeTaskEntries.map((entry) => (
+                  <div className="task-board-card" key={entry.id}>
+                    <strong>{entry.task}</strong>
+                    <span>{entry.hours}h logged</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="workspace-card task-column">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Tasks</p>
+                  <h2>Completed</h2>
+                </div>
+                <span className="count-pill">{completedTasks}</span>
+              </div>
+              <div className="task-board-list">
+                {completedTaskEntries.length === 0 && <p className="muted">Completed task history will show here.</p>}
+                {completedTaskEntries.map((entry) => (
+                  <div className="task-board-card" key={entry.id}>
+                    <strong>{entry.task}</strong>
+                    <span>{entry.hours}h logged</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activePage === "myOrganization" && (
+          <section className={`workspace-grid my-organization-grid${organization ? " organization-connected-grid" : " organization-empty-grid"}`}>
+            <div className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Organizations</p>
+                  <h2>{organization ? "Your workspaces" : "No organization connected"}</h2>
+                </div>
+                <div className="organization-page-actions">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setOrganizationAction(null);
+                      setActivePage("createOrganization");
+                    }}
+                    type="button"
+                  >
+                    Create Organization
+                  </button>
+                  <button
+                    className={`btn ${organizationAction === "join" ? "btn-primary" : "btn-secondary"}`}
+                    onClick={() => setOrganizationAction("join")}
+                    type="button"
+                  >
+                    Join Organization
+                  </button>
+                </div>
+              </div>
+              {organization ? (
+                <div className="organization-connected-actions">
+                  <button
+                    className="organization-select-button"
+                    onClick={() => setActivePage("organizationDetails")}
+                    type="button"
+                  >
+                    <span>Current organization</span>
+                    <strong>{organization.name}</strong>
+                    <small>{organization.orgCode}</small>
+                  </button>
+                </div>
+              ) : (
+                <div className="organization-empty-state">
+                  <p className="muted">You are not connected to an organization yet. Use the actions above to continue.</p>
+                </div>
+              )}
+            </div>
+
+            {organizationAction === "join" && (
+              <div className="organization-action-panel">
+                {joinWorkspaceCard}
+              </div>
+            )}
+          </section>
+        )}
+
+        {activePage === "createOrganization" && (
+          <section className="workspace-grid single-panel create-organization-page">
+            <div className="organization-page-header">
+              <div>
+                <p className="eyebrow">Organizations</p>
+                <h2>Create organization</h2>
+              </div>
+              <button className="btn btn-secondary" type="button" onClick={() => setActivePage("myOrganization")}>
+                Back
+              </button>
+            </div>
+            {createWorkspaceCard}
+          </section>
+        )}
+
+        {organization && activePage === "organizationDetails" && (
+          <section className="organization-details-page">
+            <div className="organization-page-header">
+              <div>
+                <p className="eyebrow">Organization</p>
+                <h2>{organization.name}</h2>
+              </div>
+              <button className="btn btn-secondary" type="button" onClick={() => setActivePage("myOrganization")}>
+                Back
+              </button>
+            </div>
+
+            <section className="workspace-hero-panel organization-detail-hero">
+              <div>
+                <p className="eyebrow">Workspace Profile</p>
+                <h1>{organization.name}</h1>
+                <p className="workspace-hero-copy">
+                  Organization ID {organization.orgCode} - {organization.industry || "Operations"} workspace
+                </p>
+              </div>
+              <div className="workspace-hero-meta">
+                <span>{user.role || "employee"}</span>
+                <strong>{user.name}</strong>
+                <small>{user.email}</small>
+              </div>
+            </section>
+
+            <section className="dashboard-kpi-grid">
+              <KpiCard label="Employees" note="Workspace users" tone="info" value={overview.stats.employees} />
+              <KpiCard label="Departments" note="Company structure" tone="warning" value={overview.stats.departments} />
+              <KpiCard label="Org Hours" note="Logged by members" tone="neutral" value={overview.stats.totalHours} />
+              <KpiCard label="Active Roles" note="RBAC summary" tone="success" value={overview.stats.activeRoles} />
+            </section>
+
+            <section className="workspace-grid organization-details-grid">
+              <div className="workspace-card">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Details</p>
+                    <h2>Company information</h2>
+                  </div>
+                </div>
+                <div className="organization-detail-grid">
+                  <InfoTile label="Organization ID" value={organization.orgCode} />
+                  <InfoTile label="Company Email" value={organization.companyEmail} />
+                  <InfoTile label="Industry" value={organization.industry || "Not set"} />
+                  <InfoTile label="Team Size" value={organization.teamSize || "Not set"} />
+                  <InfoTile label="Your Role" value={user.role || "employee"} />
+                  <InfoTile label="Your Department" value={user.department || "Unassigned"} />
+                </div>
+              </div>
+
+              <div className="workspace-card">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Departments</p>
+                    <h2>Company structure</h2>
+                  </div>
+                </div>
+                <div className="department-list">
+                  {overview.departments.length === 0 && <p className="muted">No departments created yet.</p>}
+                  {overview.departments.slice(0, 5).map((department) => (
+                    <div className="department-item" key={department.id}>
+                      <strong>{department.name}</strong>
+                      <span>{department.description || "No description"}</span>
+                      <small>{department.employeeCount || 0} employees</small>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Employees</p>
+                  <h2>Workspace members</h2>
+                </div>
+              </div>
+              <div className="employee-table">
+                {overview.employees.length === 0 && <p className="muted">No employees connected yet.</p>}
+                {overview.employees.map((employee) => (
+                  <div className="employee-row" key={employee.id}>
+                    <div>
+                      <strong>{employee.name}</strong>
+                      <span>{employee.email}</span>
+                    </div>
+                    <span>{employee.department || "Unassigned"}</span>
+                    <small>{employee.role || "employee"}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </section>
         )}
 
         {overview.organization && activePage === "teams" && (
@@ -360,27 +813,6 @@ export default function Dashboard({ token, user }: DashboardProps) {
                       <span>{department.employeeCount || 0} members</span>
                     </div>
                     <small>{department.description || "Team workspace"}</small>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {overview.organization && activePage === "elements" && (
-          <section className="workspace-grid">
-            <div className="workspace-card">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Elements</p>
-                  <h2>Workspace modules</h2>
-                </div>
-              </div>
-              <div className="elements-grid">
-                {elementItems.map((item) => (
-                  <div className="element-card" key={item.label}>
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
                   </div>
                 ))}
               </div>
@@ -448,7 +880,119 @@ export default function Dashboard({ token, user }: DashboardProps) {
         </section>
         )}
 
-        {!overview.organization && activePage !== "overview" && activePage !== "timesheets" && joinWorkspaceCard}
+        {overview.organization && activePage === "approvals" && (
+          <section className="workspace-grid single-panel">
+            <div className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Approvals</p>
+                  <h2>Approval center</h2>
+                </div>
+              </div>
+              <div className="status-list">
+                <StatusRow label="Pending timesheet approvals" value={0} />
+                <StatusRow label="Approved this week" value={completedTasks} />
+                <StatusRow label="Policy exceptions" value={0} />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activePage === "reports" && (
+          <section className="workspace-grid reports-grid">
+            <div className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Reports</p>
+                  <h2>Productivity summary</h2>
+                </div>
+              </div>
+              <div className="dashboard-kpi-grid reports-kpi-grid">
+                <KpiCard label="Total Hours" note="All logged work" tone="neutral" value={totalHours} />
+                <KpiCard label="Completed Logs" note="Timesheet entries" tone="success" value={completedTasks} />
+                <KpiCard label="Team Members" note="Organization users" tone="info" value={overview.stats.employees} />
+                <KpiCard label="Departments" note="Company structure" tone="warning" value={overview.stats.departments} />
+              </div>
+            </div>
+
+            <div className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Breakdown</p>
+                  <h2>Operational metrics</h2>
+                </div>
+              </div>
+              <div className="status-list">
+                <StatusRow label="Average hours per entry" value={averageHours} />
+                <StatusRow label="Active roles" value={overview.stats.activeRoles} />
+                <StatusRow label="Pending tasks" value={pendingTasks} />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {overview.organization && activePage === "elements" && (
+          <section className="workspace-grid single-panel">
+            <div className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Elements</p>
+                  <h2>Workspace modules</h2>
+                </div>
+              </div>
+              <div className="elements-grid">
+                {elementItems.map((item) => (
+                  <div className="element-card" key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activePage === "settings" && (
+          <section className="workspace-grid settings-grid">
+            <div className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Settings</p>
+                  <h2>Account profile</h2>
+                </div>
+              </div>
+              <div className="organization-detail-grid">
+                <InfoTile label="Name" value={user.name} />
+                <InfoTile label="Email" value={user.email} />
+                <InfoTile label="Provider" value={user.provider} />
+                <InfoTile label="Role" value={user.role || "employee"} />
+              </div>
+            </div>
+
+            <div className="workspace-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Access</p>
+                  <h2>Workspace permissions</h2>
+                </div>
+              </div>
+              <div className="status-list">
+                <StatusRow label="Organization connected" value={hasOrganization ? 1 : 0} />
+                <StatusRow label="Can manage departments" value={isOrgAdmin ? 1 : 0} />
+                <StatusRow label="Microsoft account" value={user.provider === "microsoft" ? 1 : 0} />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {!overview.organization &&
+          activePage !== "overview" &&
+          activePage !== "tasks" &&
+          activePage !== "timesheets" &&
+          activePage !== "myOrganization" &&
+          activePage !== "reports" &&
+          activePage !== "settings" &&
+          noOrganizationActions}
 
         {activePage === "timesheets" && (
         <section className="workspace-card">
@@ -508,9 +1052,38 @@ export default function Dashboard({ token, user }: DashboardProps) {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function KpiCard({
+  label,
+  note,
+  tone,
+  value,
+}: {
+  label: string;
+  note: string;
+  tone: string;
+  value: number;
+}) {
   return (
-    <div className="workspace-stat-card">
+    <div className={`dashboard-kpi-card ${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{note}</small>
+    </div>
+  );
+}
+
+function StatusRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="status-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function InfoTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="info-tile">
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
