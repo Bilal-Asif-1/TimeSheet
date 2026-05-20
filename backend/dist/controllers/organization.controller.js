@@ -1,20 +1,13 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createDepartment = exports.selectOrganization = exports.getOrganizationOverview = exports.createOrganization = void 0;
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+exports.selectOrganization = exports.getOrganizationOverview = exports.createOrganization = void 0;
 const db_1 = require("../config/db");
-const getAppUser = (req) => req.appUser;
-const issueAppToken = (payload) => {
-    const secret = process.env.APP_JWT_SECRET || "dev-secret-change-me";
-    return jsonwebtoken_1.default.sign(payload, secret, { expiresIn: "7d" });
-};
-const normalizeOrganizationCode = (value) => value.trim().toUpperCase();
+const appToken_1 = require("../utils/appToken");
+const requestUser_1 = require("../utils/requestUser");
+const organizationCode_1 = require("../utils/organizationCode");
 const createOrganization = async (req, res) => {
     try {
-        const appUser = getAppUser(req);
+        const appUser = (0, requestUser_1.getAppUser)(req);
         if (!appUser?.userId) {
             return res.status(401).json({ error: "Unauthorized" });
         }
@@ -22,8 +15,8 @@ const createOrganization = async (req, res) => {
         if (!organizationName?.trim() || !organizationId?.trim()) {
             return res.status(400).json({ error: "Organization name and Organization ID are required." });
         }
-        const orgCode = normalizeOrganizationCode(organizationId);
-        if (!/^ORG-[A-Z0-9]{4,12}$/.test(orgCode)) {
+        const orgCode = (0, organizationCode_1.normalizeOrganizationCode)(organizationId);
+        if (!(0, organizationCode_1.isValidOrganizationCode)(orgCode)) {
             return res
                 .status(400)
                 .json({ error: "Organization ID must look like ORG-WIMETRIX or ORG-1234." });
@@ -54,7 +47,7 @@ const createOrganization = async (req, res) => {
        WHERE id = $4
        RETURNING id, name, email, provider, "organizationId", "organizationCode", role, department`, [organization.id, organization.orgCode, "ceo", appUser.userId]);
         const user = updatedUser.rows[0];
-        const token = issueAppToken({
+        const token = (0, appToken_1.issueAppToken)({
             userId: user.id,
             email: user.email,
             name: user.name,
@@ -74,7 +67,7 @@ const createOrganization = async (req, res) => {
 exports.createOrganization = createOrganization;
 const getOrganizationOverview = async (req, res) => {
     try {
-        const appUser = getAppUser(req);
+        const appUser = (0, requestUser_1.getAppUser)(req);
         if (!appUser?.userId) {
             return res.status(401).json({ error: "Unauthorized" });
         }
@@ -165,7 +158,7 @@ const getOrganizationOverview = async (req, res) => {
 exports.getOrganizationOverview = getOrganizationOverview;
 const selectOrganization = async (req, res) => {
     try {
-        const appUser = getAppUser(req);
+        const appUser = (0, requestUser_1.getAppUser)(req);
         if (!appUser?.userId) {
             return res.status(401).json({ error: "Unauthorized" });
         }
@@ -201,7 +194,7 @@ const selectOrganization = async (req, res) => {
             appUser.userId,
         ]);
         const user = updated.rows[0];
-        const token = issueAppToken({
+        const token = (0, appToken_1.issueAppToken)({
             userId: user.id,
             email: user.email,
             name: user.name,
@@ -219,33 +212,3 @@ const selectOrganization = async (req, res) => {
     }
 };
 exports.selectOrganization = selectOrganization;
-const createDepartment = async (req, res) => {
-    try {
-        const appUser = getAppUser(req);
-        if (!appUser?.userId) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
-        if (!appUser.organizationId) {
-            return res.status(400).json({ error: "Join or create an organization first." });
-        }
-        if (appUser.role !== "ceo" && appUser.role !== "manager") {
-            return res.status(403).json({ error: "Only organization admins can add departments." });
-        }
-        const { name, description } = req.body;
-        if (!name?.trim()) {
-            return res.status(400).json({ error: "Department name is required." });
-        }
-        const pool = await (0, db_1.connectDB)();
-        const inserted = await pool.query(`INSERT INTO departments ("organizationId", name, description)
-       VALUES ($1, $2, $3)
-       ON CONFLICT ("organizationId", name)
-       DO UPDATE SET description = EXCLUDED.description
-       RETURNING id, name, description, "createdAt"`, [appUser.organizationId, name.trim(), description?.trim() || null]);
-        return res.status(201).json({ department: inserted.rows[0] });
-    }
-    catch (error) {
-        const err = error;
-        return res.status(500).json({ error: err.message });
-    }
-};
-exports.createDepartment = createDepartment;

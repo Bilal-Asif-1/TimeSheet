@@ -1,0 +1,223 @@
+:root {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f8fafc;
+  background: #050505;
+  overscroll-behavior: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #050505;
+  overscroll-behavior: none;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+  background: #050505;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.08), transparent 24%),
+    linear-gradient(135deg, #050505 0%, #0f0f0f 48%, #18181b 100%);
+}
+
+.topbar {
+  position: sticky;
+  top: 18px;
+  z-index: 20;
+  color: #ffffff;
+  padding: 0 24px;
+  background: transparent;
+}
+
+.topbar-inner {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 0 20px;
+  background: rgba(28, 28, 30, 0.84);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+}
+
+.topbar h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: transparent;
+  background: linear-gradient(135deg, #ffffff, #71717a);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-chip,
+.topbar .btn-secondary {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.11);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.topbar .btn-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.main-content {
+  padding-top: 54px;
+  padding-bottom: 40px;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f1f1f1;
+}
+
+.auth-wrapper {
+  width: 100%;
+  max-width: 540px;
+}
+
+.auth-panel {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  padding: 34px 38px 26px;
+}
+
+.auth-title {
+  font-size: 34px;
+  margin-bottom: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.auth-label {
+  display: block;
+  font-size: 16px;
+  color: #374151;
+  margin-bottom: 8px;
+  margin-top: 16px;
+}
+
+.auth-input {
+  width: 100%;
+  border: 2px solid #94a3b8;
+  border-radius: 7px;
+  padding: 14px 12px;
+  font-size: 18px;
+  outline: none;
+}
+
+.auth-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.or-text {
+  text-align: center;
+  font-size: 34px;
+  color: #4b5563;
+  margin: 16px 0;
+}
+
+.ms-btn {
+  width: 100%;
+  border: 1px solid #9ca3af;
+  background: #ffffff;
+  color: #374151;
+  font-size: 24px;
+  font-weight: 600;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.ms-btn:hover {
+  background: #f8fafc;
+}
+
+.ms-logo {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+}
+
+.ms-tile {
+  display: block;
+}
+
+.ms-red {
+  background: #f25022;
+}
+
+.ms-green {
+  background: #7fba00;
+}
+
+.ms-blue {
+  background: #00a4ef;
+}
+
+.ms-yellow {
+  background: #ffb900;
+}
+
+.auth-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #374151;
+  font-size: 16px;
+}

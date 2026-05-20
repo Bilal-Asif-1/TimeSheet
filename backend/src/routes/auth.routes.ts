@@ -1,5 +1,6 @@
 import express from "express";
-import { joinOrganization, login, microsoftSync, register } from "../controllers/auth.controller";
+import { login, microsoftSync, register } from "../controllers/auth.controller";
+import { joinOrganization } from "../controllers/authJoin.controller";
 import { verifyAppToken } from "../middleware/verifyAppToken";
 import { verifyMicrosoftToken } from "../middleware/verifyMicrosoftToken";
 

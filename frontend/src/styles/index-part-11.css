@@ -1,0 +1,222 @@
+
+.timesheet-landing-shell .btn-ghost {
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.timesheet-landing-shell .btn:hover,
+.access-card button:hover {
+  transform: translateY(-1px);
+}
+
+.auth-experience {
+  max-width: 720px;
+  margin: 0 auto;
+  min-height: calc(100vh - 72px);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-visual,
+.auth-card-pro {
+  border-radius: 28px;
+  padding: 28px;
+}
+
+.workspace-visual {
+  min-height: 620px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #e5e7eb;
+  background:
+    linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.9)),
+    #111827;
+}
+
+.workspace-visual .flow-eyebrow {
+  color: #93c5fd;
+}
+
+.workspace-visual h2 {
+  max-width: 520px;
+  font-size: 38px;
+  line-height: 1.1;
+}
+
+.org-map {
+  display: grid;
+  gap: 16px;
+}
+
+.org-node,
+.org-branch span,
+.access-row span {
+  border: 1px solid rgba(226, 232, 240, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.org-node.primary {
+  max-width: 180px;
+  color: #ffffff;
+  font-weight: 800;
+  background: #2563eb;
+}
+
+.org-branch,
+.access-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.access-row span {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.auth-card-pro {
+  position: relative;
+  align-self: center;
+  width: 100%;
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.14);
+  background:
+    radial-gradient(circle at 82% 8%, rgba(255, 255, 255, 0.12), transparent 28%),
+    linear-gradient(145deg, rgba(8, 8, 8, 0.94), rgba(31, 41, 55, 0.9));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.46);
+}
+
+.auth-form-brand {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: transparent;
+  background: linear-gradient(135deg, #ffffff, #71717a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.form-back-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.form-back-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateX(-2px);
+}
+
+.auth-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 6px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.auth-mode-tabs button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #a3a3a3;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-mode-tabs button.active {
+  color: #050505;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(255, 255, 255, 0.12);
+}
+
+.auth-card-pro h1 {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.auth-subtitle {
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin-bottom: 18px;
+}
+
+.progress-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.progress-steps span {
+  height: 4px;
+  flex: 1;
+  border-radius: 999px;
+  background: rgba(113, 113, 122, 0.36);
+}
+
+.progress-steps .active {
+  background: #71717a;
+  box-shadow: 0 0 18px rgba(161, 161, 170, 0.16);
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 6px;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.auth-field .auth-input {
+  margin: 0;
+}
+
+.auth-card-pro .auth-input {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 12px 13px;
+  font-size: 15px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.register-card-pro {
+  max-width: 560px;
+  padding: 24px;
+}
+
+.register-card-pro .auth-form-brand {
+  margin-bottom: 10px;
+  font-size: 25px;
+}
+
+.register-card-pro h1 {
+  font-size: 31px;
+}

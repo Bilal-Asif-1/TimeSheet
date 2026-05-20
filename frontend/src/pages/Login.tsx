@@ -1,5 +1,7 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { getApiBaseUrl } from "../config/env";
+import AuthField from "./auth/AuthField";
+import LandingView from "./auth/LandingView";
 
 const API_BASE = getApiBaseUrl();
 
@@ -129,63 +131,20 @@ export default function Login({
 
   if (view === "landing") {
     return (
-      <div className="flow-auth-shell timesheet-landing-shell auth-login-landing">
-        <main className="timesheet-landing">
-          <section className="timesheet-hero login-only-hero">
-            <div className="hero-copy">
-              <div className="auth-form-brand">TimeSheet</div>
-              <p className="flow-eyebrow">{viewCopy.eyebrow}</p>
-              <h1>{viewCopy.title}</h1>
-              <p className="hero-text">{viewCopy.subtitle}</p>
-              <div className="hero-actions">
-                <button className="btn btn-primary" type="button" onClick={() => switchView("login")}>
-                  Login to TimeSheet
-                </button>
-                <button className="btn btn-ghost" type="button" onClick={() => switchView("register")}>
-                  Create User Account
-                </button>
-              </div>
-            </div>
-
-            <section className="product-preview login-preview" aria-label="TimeSheet workspace preview">
-              <div className="preview-toolbar">
-                <span />
-                <span />
-                <span />
-                <strong>Workspace preview</strong>
-              </div>
-              <div className="preview-grid">
-                <div className="metric-panel">
-                  <p>My hours</p>
-                  <strong>38</strong>
-                </div>
-                <div className="metric-panel">
-                  <p>Team members</p>
-                  <strong>12</strong>
-                </div>
-                <div className="metric-panel">
-                  <p>Departments</p>
-                  <strong>4</strong>
-                </div>
-              </div>
-              <div className="workflow-nodes login-workflow" aria-hidden="true">
-                <span>Login</span>
-                <i />
-                <span>Create or Join Organization</span>
-                <i />
-                <span>Track Work</span>
-              </div>
-            </section>
-          </section>
-        </main>
-      </div>
+      <LandingView
+        eyebrow={viewCopy.eyebrow}
+        title={viewCopy.title}
+        subtitle={viewCopy.subtitle}
+        onLogin={() => switchView("login")}
+        onRegister={() => switchView("register")}
+      />
     );
   }
 
   return (
     <div className="flow-auth-shell timesheet-landing-shell auth-only-landing">
       <main className="auth-experience">
-        <section className="auth-card-pro">
+        <section className={`auth-card-pro${view === "register" ? " register-card-pro" : ""}`}>
           <button
             className="form-back-button"
             type="button"
@@ -202,7 +161,7 @@ export default function Login({
           <div className="form-grid">
             {isLoginView && (
               <>
-                <Field label="Username or Email Address">
+                <AuthField label="Username or Email Address">
                   <input
                     className="auth-input"
                     type="email"
@@ -210,8 +169,8 @@ export default function Login({
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="name@company.com"
                   />
-                </Field>
-                <Field label="Password">
+                </AuthField>
+                <AuthField label="Password">
                   <input
                     className="auth-input"
                     type="password"
@@ -219,21 +178,21 @@ export default function Login({
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Enter password"
                   />
-                </Field>
+                </AuthField>
               </>
             )}
 
             {view === "register" && (
               <>
-                <Field label="Full Name">
+                <AuthField label="Full Name">
                   <input
                     className="auth-input"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     placeholder="John Doe"
                   />
-                </Field>
-                <Field label="Work Email">
+                </AuthField>
+                <AuthField label="Work Email">
                   <input
                     className="auth-input"
                     type="email"
@@ -241,8 +200,8 @@ export default function Login({
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="name@company.com"
                   />
-                </Field>
-                <Field label="Password">
+                </AuthField>
+                <AuthField label="Password">
                   <input
                     className="auth-input"
                     type="password"
@@ -250,7 +209,7 @@ export default function Login({
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Create password"
                   />
-                </Field>
+                </AuthField>
               </>
             )}
           </div>
@@ -296,14 +255,5 @@ export default function Login({
         </section>
       </main>
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="auth-field">
-      <span>{label}</span>
-      {children}
-    </label>
   );
 }

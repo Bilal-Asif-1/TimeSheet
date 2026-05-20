@@ -1,35 +1,13 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { connectDB } from "../config/db";
+import { issueAppToken } from "../utils/appToken";
+import { generateOrganizationCode, isValidOrganizationCode } from "../utils/organizationCode";
 
 /*
 // legacy mssql code (kept for rollback)
 import sql, { connectDB } from "../config/db";
 */
-
-const issueAppToken = (payload: {
-  userId: number;
-  email: string;
-  name: string;
-  provider: "local" | "microsoft";
-  organizationId?: number | null;
-  organizationCode?: string | null;
-  role?: string | null;
-  department?: string | null;
-}) => {
-  const secret = process.env.APP_JWT_SECRET || "dev-secret-change-me";
-  return jwt.sign(payload, secret, { expiresIn: "7d" });
-};
-
-const generateOrganizationCode = () => {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let suffix = "";
-  for (let i = 0; i < 6; i += 1) {
-    suffix += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return `ORG-${suffix}`;
-};
 
 // Registers a local user account and returns an app token.
 export const register = async (req: Request, res: Response) => {
@@ -70,7 +48,7 @@ export const register = async (req: Request, res: Response) => {
 
     if (organizationName?.trim()) {
       let orgCode = organizationId?.trim().toUpperCase() || generateOrganizationCode();
-      if (!/^ORG-[A-Z0-9]{4,12}$/.test(orgCode)) {
+      if (!isValidOrganizationCode(orgCode)) {
         return res
           .status(400)
           .json({ error: "Organization ID must look like ORG-WIMETRIX or ORG-1234." });
@@ -278,75 +256,6 @@ export const microsoftSync = async (req: Request, res: Response) => {
       user = inserted.rows[0];
     }
 
-    const token = issueAppToken({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      provider: user.provider,
-      organizationId: user.organizationId,
-      organizationCode: user.organizationCode,
-      role: user.role,
-      department: user.department,
-    });
-
-    return res.json({ token, user });
-  } catch (error) {
-    const err = error as Error;
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-// Links the currently logged-in user to an existing organization workspace.
-export const joinOrganization = async (req: Request, res: Response) => {
-  try {
-    const appUser = (req as Request & { appUser?: { userId: number } }).appUser;
-    if (!appUser?.userId) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const { organizationId, department } = req.body as {
-      organizationId?: string;
-      department?: string;
-    };
-
-    if (!organizationId?.trim()) {
-      return res.status(400).json({ error: "Organization ID is required." });
-    }
-
-    const pool = await connectDB();
-    const orgResult = await pool.query(
-      `SELECT id, "orgCode"
-       FROM organizations
-       WHERE UPPER("orgCode") = UPPER($1)
-       LIMIT 1`,
-      [organizationId.trim()],
-    );
-
-    if (orgResult.rows.length === 0) {
-      return res.status(404).json({ error: "Organization ID was not found." });
-    }
-
-    const organization = orgResult.rows[0];
-    await pool.query(
-      `INSERT INTO organization_members ("userId", "organizationId", role, department, "membershipType")
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT ("userId", "organizationId")
-       DO UPDATE SET department = COALESCE(EXCLUDED.department, organization_members.department)`,
-      [appUser.userId, organization.id, "employee", department?.trim() || null, "joined"],
-    );
-
-    const updated = await pool.query(
-      `UPDATE users
-       SET "organizationId" = $1,
-           "organizationCode" = $2,
-           role = CASE WHEN role = 'ceo' AND "organizationId" = $1 THEN role ELSE 'employee' END,
-           department = COALESCE($3, department)
-       WHERE id = $4
-       RETURNING id, name, email, provider, "organizationId", "organizationCode", role, department`,
-      [organization.id, organization.orgCode, department?.trim() || null, appUser.userId],
-    );
-
-    const user = updated.rows[0];
     const token = issueAppToken({
       userId: user.id,
       email: user.email,

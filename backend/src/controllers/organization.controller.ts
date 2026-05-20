@@ -1,17 +1,8 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import { connectDB } from "../config/db";
-
-type AppUser = {
-  userId: number;
-  email?: string;
-  name?: string;
-  provider?: "local" | "microsoft";
-  organizationId?: number | null;
-  organizationCode?: string | null;
-  role?: string | null;
-  department?: string | null;
-};
+import { issueAppToken } from "../utils/appToken";
+import { getAppUser, isOrganizationAdmin } from "../utils/requestUser";
+import { isValidOrganizationCode, normalizeOrganizationCode } from "../utils/organizationCode";
 
 type OrganizationMembership = {
   id: number;
@@ -25,24 +16,6 @@ type OrganizationMembership = {
   membershipType: "owned" | "joined";
   isActive: boolean;
 };
-
-const getAppUser = (req: Request) => (req as Request & { appUser?: AppUser }).appUser;
-
-const issueAppToken = (payload: {
-  userId: number;
-  email: string;
-  name: string;
-  provider: "local" | "microsoft";
-  organizationId?: number | null;
-  organizationCode?: string | null;
-  role?: string | null;
-  department?: string | null;
-}) => {
-  const secret = process.env.APP_JWT_SECRET || "dev-secret-change-me";
-  return jwt.sign(payload, secret, { expiresIn: "7d" });
-};
-
-const normalizeOrganizationCode = (value: string) => value.trim().toUpperCase();
 
 export const createOrganization = async (req: Request, res: Response) => {
   try {
@@ -63,7 +36,7 @@ export const createOrganization = async (req: Request, res: Response) => {
     }
 
     const orgCode = normalizeOrganizationCode(organizationId);
-    if (!/^ORG-[A-Z0-9]{4,12}$/.test(orgCode)) {
+    if (!isValidOrganizationCode(orgCode)) {
       return res
         .status(400)
         .json({ error: "Organization ID must look like ORG-WIMETRIX or ORG-1234." });
@@ -304,43 +277,6 @@ export const selectOrganization = async (req: Request, res: Response) => {
     });
 
     return res.json({ token, user });
-  } catch (error) {
-    const err = error as Error;
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-export const createDepartment = async (req: Request, res: Response) => {
-  try {
-    const appUser = getAppUser(req);
-    if (!appUser?.userId) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    if (!appUser.organizationId) {
-      return res.status(400).json({ error: "Join or create an organization first." });
-    }
-
-    if (appUser.role !== "ceo" && appUser.role !== "manager") {
-      return res.status(403).json({ error: "Only organization admins can add departments." });
-    }
-
-    const { name, description } = req.body as { name?: string; description?: string };
-    if (!name?.trim()) {
-      return res.status(400).json({ error: "Department name is required." });
-    }
-
-    const pool = await connectDB();
-    const inserted = await pool.query(
-      `INSERT INTO departments ("organizationId", name, description)
-       VALUES ($1, $2, $3)
-       ON CONFLICT ("organizationId", name)
-       DO UPDATE SET description = EXCLUDED.description
-       RETURNING id, name, description, "createdAt"`,
-      [appUser.organizationId, name.trim(), description?.trim() || null],
-    );
-
-    return res.status(201).json({ department: inserted.rows[0] });
   } catch (error) {
     const err = error as Error;
     return res.status(500).json({ error: err.message });

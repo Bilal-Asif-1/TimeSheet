@@ -1,0 +1,220 @@
+
+.remember-row input {
+  width: 22px;
+  height: 22px;
+}
+
+.auth-links {
+  padding: 24px 0 0;
+}
+
+.link-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #475569;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 16px;
+}
+
+.dashboard-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-wrap.overview-page {
+  gap: 12px;
+}
+
+.main-content:has(.overview-page) {
+  padding-top: 38px;
+  padding-bottom: 0;
+}
+
+.app-shell:has(.overview-page) {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.workspace-shell {
+  --workspace-sidebar-width: 220px;
+  display: block;
+  padding-left: calc(var(--workspace-sidebar-width) + 20px);
+  align-items: start;
+}
+
+.workspace-shell.no-organization-shell {
+  --workspace-sidebar-width: 205px;
+}
+
+.workspace-shell.organization-area-shell {
+  padding-left: 0;
+}
+
+.workspace-sidebar {
+  position: fixed;
+  left: max(24px, calc((100vw - 1280px) / 2));
+  top: 112px;
+  z-index: 20;
+  width: var(--workspace-sidebar-width);
+  min-height: calc(100vh - 148px);
+  max-height: calc(100vh - 148px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  padding: 16px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 80% 8%, rgba(255, 255, 255, 0.12), transparent 26%),
+    linear-gradient(160deg, rgba(8, 8, 8, 0.96), rgba(31, 41, 55, 0.92));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+}
+
+.sidebar-brand {
+  font-size: 21px;
+  font-weight: 900;
+  color: transparent;
+  background: linear-gradient(135deg, #ffffff, #71717a);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.sidebar-nav button {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #a3a3a3;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  text-align: left;
+}
+
+.sidebar-nav button:hover,
+.sidebar-nav button.active {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-profile {
+  margin-top: auto;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-profile span,
+.sidebar-profile small {
+  color: #a3a3a3;
+  font-size: 12px;
+}
+
+.organization-top-nav {
+  position: sticky;
+  top: 96px;
+  z-index: 18;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(10, 10, 10, 0.82);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.organization-top-nav button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #a3a3a3;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.organization-top-nav button:hover,
+.organization-top-nav button.active {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.organization-top-nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.organization-top-nav .organization-create-nav-button {
+  color: #111827;
+  border-color: rgba(255, 255, 255, 0.7);
+  background: #e5e7eb;
+}
+
+.organization-top-nav .organization-create-nav-button:hover,
+.organization-top-nav .organization-create-nav-button.active {
+  color: #111827;
+  background: #ffffff;
+}
+
+.organization-top-nav .organization-exit-button {
+  margin-left: auto;
+  color: #111827;
+  background: #e5e7eb;
+}
+
+.organization-top-nav .organization-exit-button:hover {
+  color: #111827;
+  background: #ffffff;
+}
+
+.workspace-dashboard {
+  color: #f8fafc;
+}
+
+.workspace-hero-panel,
+.workspace-card,
+.workspace-stat-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at 90% 10%, rgba(255, 255, 255, 0.1), transparent 24%),
+    linear-gradient(145deg, rgba(10, 10, 10, 0.94), rgba(31, 41, 55, 0.9));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+}
+
+.workspace-hero-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-radius: 26px;
+  padding: 30px;
+}
+
+.workspace-hero-panel h1 {
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+
