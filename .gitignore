@@ -3,6 +3,7 @@ backend/.env
 frontend/.env
 *.pem
 .DS_Store
+**/.DS_Store
 **/node_modules/
 **/dist/
 backend/uploads/tasks/
