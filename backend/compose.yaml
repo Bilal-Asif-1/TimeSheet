@@ -1,0 +1,50 @@
+# API + Postgres only (e.g. run the UI with `npm run dev` in /frontend).
+# From this folder:
+#   docker compose -f compose.yaml up --build
+#
+# Requires ./.env (same keys as production backend). DB_* in environment below override host for Docker.
+
+name: timesheet-backend
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: timesheet-backend-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-timesheet}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apppass}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - timesheet_backend_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-timesheet}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: timesheet-backend-api
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_HTTP_PORT:-5001}:5001"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-timesheet}
+      DB_USER: ${POSTGRES_USER:-appuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-apppass}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  timesheet_backend_pg:

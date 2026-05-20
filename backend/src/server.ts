@@ -46,7 +46,7 @@ function buildAllowedOriginKeys(): Set<string> {
     }
   };
 
-  // Local Vite dev (normalized keys). Production/staging: set CLIENT_URL and/or CORS_ORIGINS (e.g. via docker-compose).
+  // Local Vite dev (normalized keys). Production/staging: set CLIENT_URL and/or CORS_ORIGINS (e.g. via compose.yaml).
   addCsv("http://localhost:5173");
   addCsv("http://127.0.0.1:5173");
 
