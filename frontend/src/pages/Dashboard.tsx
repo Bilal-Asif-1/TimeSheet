@@ -1,3 +1,5 @@
+import type { ReactElement } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { DashboardLayout } from "./dashboard/DashboardLayout";
 import { DepartmentsPage } from "./dashboard/DepartmentsPage";
 import { EmployeesPage } from "./dashboard/EmployeesPage";
@@ -26,6 +28,8 @@ export default function Dashboard({ token, user }: DashboardProps) {
   const isOrganizationArea = organizationPages.includes(activePage);
   const showOrganizationTopNav = isOrganizationArea && activePage !== "createTask";
   const selectedTask = workflowTasks.find((task) => task.id === selectedTaskId) || null;
+  const organizationElement = (element: ReactElement) => (hasOrganization ? element : <OrganizationsPage dashboard={dashboard} />);
+  const taskDetailElement = selectedTask ? <TaskDetailsPage dashboard={dashboard} task={selectedTask} /> : <TaskLoadingPage />;
 
   return (
     <DashboardLayout
@@ -40,27 +44,37 @@ export default function Dashboard({ token, user }: DashboardProps) {
         <OrganizationTopNav activePage={activePage} hasOrganization={hasOrganization} onPageChange={setActivePage} />
       )}
 
-      {activePage === "overview" && <OverviewPage dashboard={dashboard} />}
-      {activePage === "tasks" && <TasksPage dashboard={dashboard} />}
-      {activePage === "taskPending" && <TaskStatusPage dashboard={dashboard} page="taskPending" />}
-      {activePage === "taskProgress" && <TaskStatusPage dashboard={dashboard} page="taskProgress" />}
-      {activePage === "taskCompleted" && <TaskStatusPage dashboard={dashboard} page="taskCompleted" />}
-      {activePage === "taskDetails" && selectedTask && <TaskDetailsPage dashboard={dashboard} task={selectedTask} />}
-      {activePage === "createTask" && <TaskCreatePage dashboard={dashboard} />}
-
-      {activePage === "myOrganization" && <OrganizationsPage dashboard={dashboard} />}
-      {activePage === "createOrganization" && <CreateOrganizationPage dashboard={dashboard} />}
-      {activePage === "organizationDetails" && <OrganizationDetailsPage dashboard={dashboard} />}
-      {activePage === "teams" && <TeamsPage dashboard={dashboard} />}
-      {activePage === "departments" && <DepartmentsPage dashboard={dashboard} />}
-      {activePage === "employees" && <EmployeesPage dashboard={dashboard} />}
-
-      {activePage === "reports" && <ReportsPage dashboard={dashboard} />}
-      {activePage === "settings" && <SettingsPage dashboard={dashboard} />}
-      {activePage === "timesheets" && <TimesheetsPage dashboard={dashboard} />}
-      {!hasOrganization && !["overview", "tasks", "myOrganization", "reports", "settings"].includes(activePage) && (
-        <OrganizationsPage dashboard={dashboard} />
-      )}
+      <Routes>
+        <Route index element={<OverviewPage dashboard={dashboard} />} />
+        <Route path="tasks" element={<TasksPage dashboard={dashboard} />} />
+        <Route path="tasks/create" element={<TaskCreatePage dashboard={dashboard} />} />
+        <Route path="tasks/pending" element={<TaskStatusPage dashboard={dashboard} page="taskPending" />} />
+        <Route path="tasks/in-progress" element={<TaskStatusPage dashboard={dashboard} page="taskProgress" />} />
+        <Route path="tasks/completed" element={<TaskStatusPage dashboard={dashboard} page="taskCompleted" />} />
+        <Route path="tasks/:taskId" element={taskDetailElement} />
+        <Route path="organizations" element={<OrganizationsPage dashboard={dashboard} />} />
+        <Route path="organizations/create" element={<CreateOrganizationPage dashboard={dashboard} />} />
+        <Route path="organizations/current" element={organizationElement(<OrganizationDetailsPage dashboard={dashboard} />)} />
+        <Route path="organizations/teams" element={organizationElement(<TeamsPage dashboard={dashboard} />)} />
+        <Route path="organizations/departments" element={organizationElement(<DepartmentsPage dashboard={dashboard} />)} />
+        <Route path="organizations/employees" element={organizationElement(<EmployeesPage dashboard={dashboard} />)} />
+        <Route path="reports" element={<ReportsPage dashboard={dashboard} />} />
+        <Route path="settings" element={<SettingsPage dashboard={dashboard} />} />
+        <Route path="timesheets" element={<TimesheetsPage dashboard={dashboard} />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </DashboardLayout>
+  );
+}
+
+function TaskLoadingPage() {
+  return (
+    <section className="workspace-grid single-panel task-status-page">
+      <div className="workspace-card">
+        <p className="eyebrow">Task Details</p>
+        <h2>Loading task</h2>
+        <p className="muted">We are opening this task from the current workspace.</p>
+      </div>
+    </section>
   );
 }
