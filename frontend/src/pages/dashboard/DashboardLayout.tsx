@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
+import { NavLink } from "react-router-dom";
 import type { WorkspacePage } from "./types";
-import { workspacePages } from "./utils";
+import { pageToPath, workspacePages } from "./utils";
 
 type Props = {
   activePage: WorkspacePage;
   children: ReactNode;
   hasOrganization: boolean;
   isOrganizationArea: boolean;
-  onPageChange: (page: WorkspacePage) => void;
   showOrganizationTopNav: boolean;
   user: { name: string; email: string };
 };
@@ -17,7 +17,6 @@ export function DashboardLayout({
   children,
   hasOrganization,
   isOrganizationArea,
-  onPageChange,
   showOrganizationTopNav,
   user,
 }: Props) {
@@ -28,9 +27,9 @@ export function DashboardLayout({
           <div className="sidebar-brand">Workspace</div>
           <nav className="sidebar-nav" aria-label="Workspace sections">
             {workspacePages.map((page) => (
-              <button className={activePage === page.id ? "active" : ""} key={page.id} onClick={() => onPageChange(page.id)} type="button">
+              <NavLink className={({ isActive }) => (isActive ? "active" : "")} end={page.id === "overview"} key={page.id} to={pageToPath(page.id)}>
                 {page.label}
-              </button>
+              </NavLink>
             ))}
           </nav>
           <div className="sidebar-profile">

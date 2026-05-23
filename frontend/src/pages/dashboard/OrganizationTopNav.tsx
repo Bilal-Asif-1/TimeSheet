@@ -1,33 +1,40 @@
+import { NavLink } from "react-router-dom";
 import type { WorkspacePage } from "./types";
+import { pageToPath } from "./utils";
 
 type Props = {
   activePage: WorkspacePage;
   hasOrganization: boolean;
-  onPageChange: (page: WorkspacePage) => void;
 };
 
-export function OrganizationTopNav({ activePage, hasOrganization, onPageChange }: Props) {
+export function OrganizationTopNav({ activePage, hasOrganization }: Props) {
   const homeLabel = activePage === "myOrganization" || activePage === "createOrganization" ? "Organizations" : "Home";
+  const homePath = hasOrganization ? pageToPath("organizationDetails") : pageToPath("myOrganization");
 
   return (
     <div className="organization-top-nav">
-      <button className={activePage === "organizationDetails" ? "active" : ""} onClick={() => onPageChange(hasOrganization ? "organizationDetails" : "myOrganization")} type="button">
+      <NavLink className={({ isActive }) => (isActive ? "active" : "")} to={homePath}>
         {homeLabel}
-      </button>
-      <button className={activePage === "employees" ? "active" : ""} disabled={!hasOrganization} onClick={() => onPageChange("employees")} type="button">
-        Employees
-      </button>
-      <button className={activePage === "departments" ? "active" : ""} disabled={!hasOrganization} onClick={() => onPageChange("departments")} type="button">
-        Departments
-      </button>
-      {(activePage === "myOrganization" || activePage === "createOrganization") && (
-        <button className={`organization-create-nav-button${activePage === "createOrganization" ? " active" : ""}`} onClick={() => onPageChange("createOrganization")} type="button">
-          Create Organization
-        </button>
+      </NavLink>
+      {hasOrganization ? (
+        <>
+          <NavLink className={({ isActive }) => (isActive ? "active" : "")} to={pageToPath("employees")}>Employees</NavLink>
+          <NavLink className={({ isActive }) => (isActive ? "active" : "")} to={pageToPath("departments")}>Departments</NavLink>
+        </>
+      ) : (
+        <>
+          <span className="disabled-nav-link">Employees</span>
+          <span className="disabled-nav-link">Departments</span>
+        </>
       )}
-      <button className="organization-exit-button" onClick={() => onPageChange("overview")} type="button">
+      {(activePage === "myOrganization" || activePage === "createOrganization") && (
+        <NavLink className={({ isActive }) => `organization-create-nav-button${isActive ? " active" : ""}`} to={pageToPath("createOrganization")}>
+          Create Organization
+        </NavLink>
+      )}
+      <NavLink className="organization-exit-button" to={pageToPath("overview")}>
         Back to Dashboard
-      </button>
+      </NavLink>
     </div>
   );
 }

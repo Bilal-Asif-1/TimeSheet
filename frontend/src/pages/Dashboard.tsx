@@ -22,7 +22,7 @@ type DashboardProps = {
 
 export default function Dashboard({ token, user }: DashboardProps) {
   const dashboard = useDashboardController(token, user);
-  const { activePage, overview, selectedTaskId, setActivePage, workflowTasks } = dashboard;
+  const { activePage, overview, selectedTaskId, workflowTasks } = dashboard;
   const hasOrganization = Boolean(overview.organization);
   const organizationPages = ["createTask", "createOrganization", "organizationDetails", "employees", "teams", "departments"];
   const isOrganizationArea = organizationPages.includes(activePage);
@@ -36,12 +36,11 @@ export default function Dashboard({ token, user }: DashboardProps) {
       activePage={activePage}
       hasOrganization={hasOrganization}
       isOrganizationArea={isOrganizationArea}
-      onPageChange={setActivePage}
       showOrganizationTopNav={showOrganizationTopNav}
       user={user}
     >
       {showOrganizationTopNav && (
-        <OrganizationTopNav activePage={activePage} hasOrganization={hasOrganization} onPageChange={setActivePage} />
+        <OrganizationTopNav activePage={activePage} hasOrganization={hasOrganization} />
       )}
 
       <Routes>
