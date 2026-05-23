@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getApiBaseUrl } from "../../config/env";
 import type {
   AppUser,
@@ -7,9 +8,8 @@ import type {
   OrganizationOverview,
   TimesheetEntry,
   WorkflowTask,
-  WorkspacePage,
 } from "./types";
-import { allDashboardPages, formatOrganizationId, industries, pendingDashboardPages, teamSizes } from "./utils";
+import { formatOrganizationId, industries, pageToPath, pathToPage, teamSizes } from "./utils";
 
 const API_BASE = getApiBaseUrl();
 const BASE_URL = `${API_BASE}/timesheet`;
@@ -28,16 +28,21 @@ export const emptyOverview: OrganizationOverview = {
 type SaveSetter = (value: boolean) => void;
 
 export function useDashboardController(token: string, user: AppUser) {
-  const [activePage, setActivePage] = useState<WorkspacePage>(() => {
-    const pending = localStorage.getItem("pendingDashboardPage") as WorkspacePage | null;
-    if (pending && pendingDashboardPages.includes(pending)) {
-      localStorage.removeItem("pendingDashboardPage");
-      return pending;
-    }
-    return "overview";
-  });
-  const historyReady = useRef(false);
-  const browserBack = useRef(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activePage = pathToPage(location.pathname);
+  const routeTaskId = Number(location.pathname.match(/^\/dashboard\/tasks\/(\d+)/)?.[1] || 0) || null;
+  const setActivePage = useCallback(
+    (page: ReturnType<typeof pathToPage>) => navigate(pageToPath(page)),
+    [navigate],
+  );
+  const openTaskDetails = useCallback(
+    (id: number) => {
+      setSelectedTaskId(id);
+      navigate(pageToPath("taskDetails", id));
+    },
+    [navigate],
+  );
   const [data, setData] = useState<TimesheetEntry[]>([]);
   const [overview, setOverview] = useState<OrganizationOverview>(emptyOverview);
   const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>([]);
@@ -95,31 +100,6 @@ export function useDashboardController(token: string, user: AppUser) {
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    const state = window.history.state && typeof window.history.state === "object" ? window.history.state : {};
-    if (!historyReady.current) {
-      window.history.replaceState({ ...state, workspacePage: activePage }, "", window.location.href);
-      historyReady.current = true;
-      return;
-    }
-    if (browserBack.current) {
-      browserBack.current = false;
-      return;
-    }
-    window.history.pushState({ ...state, workspacePage: activePage }, "", window.location.href);
-  }, [activePage]);
-
-  useEffect(() => {
-    const onBack = (event: PopStateEvent) => {
-      const page = (event.state as { workspacePage?: WorkspacePage } | null)?.workspacePage;
-      if (!page || !allDashboardPages.includes(page)) return;
-      browserBack.current = true;
-      setActivePage(page);
-    };
-    window.addEventListener("popstate", onBack);
-    return () => window.removeEventListener("popstate", onBack);
-  }, []);
-
   const postJson = async (url: string, body: unknown, setSaving?: SaveSetter) => {
     setSaving?.(true);
     const res = await fetch(url, { method: "POST", headers: jsonHeaders, body: JSON.stringify(body) });
@@ -129,11 +109,12 @@ export function useDashboardController(token: string, user: AppUser) {
     return payload;
   };
 
-  const saveSessionAndRefresh = (payload: any, nextPage?: WorkspacePage) => {
+  const saveSessionAndRefresh = (payload: any, nextPage?: ReturnType<typeof pathToPage>) => {
     localStorage.setItem("appToken", payload.token);
     localStorage.setItem("appUser", JSON.stringify(payload.user));
-    if (nextPage) localStorage.setItem("pendingDashboardPage", nextPage);
-    window.setTimeout(() => window.location.reload(), 400);
+    window.setTimeout(() => {
+      window.location.href = nextPage ? pageToPath(nextPage) : window.location.pathname;
+    }, 400);
   };
 
   const createOrganization = async () => {
@@ -164,7 +145,7 @@ export function useDashboardController(token: string, user: AppUser) {
     }
   };
 
-  const selectOrganization = async (organizationId: number | string, nextPage: WorkspacePage = "organizationDetails") => {
+  const selectOrganization = async (organizationId: number | string, nextPage: ReturnType<typeof pathToPage> = "organizationDetails") => {
     try {
       const payload = await postJson(`${API_BASE}/organization/select`, { organizationId });
       saveSessionAndRefresh(payload, nextPage);
@@ -271,7 +252,7 @@ export function useDashboardController(token: string, user: AppUser) {
   }, [data, workflowTasks]);
 
   return {
-    activePage, setActivePage, data, overview, workflowTasks, selectedTaskId, setSelectedTaskId,
+    activePage, setActivePage, openTaskDetails, data, overview, workflowTasks, selectedTaskId: routeTaskId ?? selectedTaskId, setSelectedTaskId,
     selectedEmployeeId, setSelectedEmployeeId, user, message, setMessage, timesheet, setTimesheet,
     organization, setOrganization, join, setJoin, department, setDepartment, taskForm, setTaskForm,
     completion, setCompletion, isSavingTimesheet, totals, apiBase: API_BASE,

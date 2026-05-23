@@ -1,5 +1,6 @@
 import { useMsal } from "@azure/msal-react";
 import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { loginRequest, msalDisabledReason } from "./auth/authConfig";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -26,6 +27,7 @@ type AppProps = {
 
 function AppWithMsal() {
   const { accounts, instance, inProgress } = useMsal();
+  const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("appToken"));
   const [user, setUser] = useState<AppUser | null>(() => {
     const raw = localStorage.getItem("appUser");
@@ -98,11 +100,11 @@ function AppWithMsal() {
       }
 
       // Local auth users should also land back on login screen immediately.
-      window.location.href = "/";
+      navigate("/", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
       // Fallback: still bring user to login UI even if Microsoft logout throws.
-      window.location.href = "/";
+      navigate("/", { replace: true });
     } finally {
       setLoggingOut(false);
     }
@@ -113,6 +115,7 @@ function AppWithMsal() {
     localStorage.setItem("appUser", JSON.stringify(nextUser));
     setToken(nextToken);
     setUser(nextUser);
+    navigate("/dashboard", { replace: true });
   };
 
   const isLoggedIn = Boolean(token && user);
@@ -136,23 +139,40 @@ function AppWithMsal() {
 
   if (!isLoggedIn) {
     return (
-      <Login
-        onAuthSuccess={handleLocalAuthSuccess}
-        onMicrosoftLogin={() => instance.loginRedirect(loginRequest)}
-        isMicrosoftLoading={inProgress !== "none"}
-        msalEnabled
-      />
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <Login
+              onAuthSuccess={handleLocalAuthSuccess}
+              onMicrosoftLogin={() => instance.loginRedirect(loginRequest)}
+              isMicrosoftLoading={inProgress !== "none"}
+              msalEnabled
+            />
+          }
+        />
+      </Routes>
     );
   }
 
   return (
-    <MainLayout userName={accountName} onLogout={handleLogout} isLoggingOut={loggingOut}>
-      <Dashboard token={token!} user={user!} />
-    </MainLayout>
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/dashboard/*"
+        element={
+          <MainLayout userName={accountName} onLogout={handleLogout} isLoggingOut={loggingOut}>
+            <Dashboard token={token!} user={user!} />
+          </MainLayout>
+        }
+      />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }
 
 function AppLocalOnly() {
+  const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("appToken"));
   const [user, setUser] = useState<AppUser | null>(() => {
     const raw = localStorage.getItem("appUser");
@@ -168,6 +188,7 @@ function AppLocalOnly() {
     setToken(null);
     setUser(null);
     setLoggingOut(false);
+    navigate("/", { replace: true });
   };
 
   const handleLocalAuthSuccess = (nextToken: string, nextUser: AppUser) => {
@@ -175,6 +196,7 @@ function AppLocalOnly() {
     localStorage.setItem("appUser", JSON.stringify(nextUser));
     setToken(nextToken);
     setUser(nextUser);
+    navigate("/dashboard", { replace: true });
   };
 
   if (loggingOut) {
@@ -192,18 +214,34 @@ function AppLocalOnly() {
   const isLoggedIn = Boolean(token && user);
   if (!isLoggedIn) {
     return (
-      <Login
-        onAuthSuccess={handleLocalAuthSuccess}
-        msalEnabled={false}
-        msalDisabledReason={msalDisabledReason}
-      />
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <Login
+              onAuthSuccess={handleLocalAuthSuccess}
+              msalEnabled={false}
+              msalDisabledReason={msalDisabledReason}
+            />
+          }
+        />
+      </Routes>
     );
   }
 
   return (
-    <MainLayout userName={user!.name} onLogout={handleLogout} isLoggingOut={loggingOut}>
-      <Dashboard token={token!} user={user!} />
-    </MainLayout>
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/dashboard/*"
+        element={
+          <MainLayout userName={user!.name} onLogout={handleLogout} isLoggingOut={loggingOut}>
+            <Dashboard token={token!} user={user!} />
+          </MainLayout>
+        }
+      />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }
 

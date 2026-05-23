@@ -11,15 +11,53 @@ export const workspacePages: { id: WorkspacePage; label: string }[] = [
 export const industries = ["Technology", "Finance", "Healthcare", "Education", "Retail", "Operations"];
 export const teamSizes = ["1-10", "11-50", "51-200", "201-1000", "1000+"];
 
-export const allDashboardPages: WorkspacePage[] = [
-  "overview", "tasks", "timesheets", "taskPending", "taskProgress", "taskCompleted", "taskDetails",
-  "myOrganization", "teams", "departments", "employees", "approvals", "reports", "elements", "settings", "createTask",
-  "createOrganization", "organizationDetails",
-];
+export const pagePaths: Record<WorkspacePage, string> = {
+  overview: "/dashboard",
+  tasks: "/dashboard/tasks",
+  timesheets: "/dashboard/timesheets",
+  taskPending: "/dashboard/tasks/pending",
+  taskProgress: "/dashboard/tasks/in-progress",
+  taskCompleted: "/dashboard/tasks/completed",
+  taskDetails: "/dashboard/tasks",
+  myOrganization: "/dashboard/organizations",
+  teams: "/dashboard/organizations/teams",
+  departments: "/dashboard/organizations/departments",
+  employees: "/dashboard/organizations/employees",
+  approvals: "/dashboard/approvals",
+  reports: "/dashboard/reports",
+  elements: "/dashboard/elements",
+  settings: "/dashboard/settings",
+  createTask: "/dashboard/tasks/create",
+  createOrganization: "/dashboard/organizations/create",
+  organizationDetails: "/dashboard/organizations/current",
+};
 
-export const pendingDashboardPages: WorkspacePage[] = [
-  "overview", "tasks", "taskPending", "taskProgress", "taskCompleted", "organizationDetails",
-];
+export const pageToPath = (page: WorkspacePage, id?: number | string | null) => {
+  if (page === "taskDetails" && id) return `${pagePaths.taskDetails}/${id}`;
+  return pagePaths[page];
+};
+
+export const pathToPage = (path: string): WorkspacePage => {
+  if (path === "/dashboard" || path === "/dashboard/") return "overview";
+  if (path === "/dashboard/tasks/create") return "createTask";
+  if (path === "/dashboard/tasks/pending") return "taskPending";
+  if (path === "/dashboard/tasks/in-progress") return "taskProgress";
+  if (path === "/dashboard/tasks/completed") return "taskCompleted";
+  if (/^\/dashboard\/tasks\/\d+/.test(path)) return "taskDetails";
+  if (path === "/dashboard/tasks") return "tasks";
+  if (path === "/dashboard/organizations/create") return "createOrganization";
+  if (path === "/dashboard/organizations/current") return "organizationDetails";
+  if (path === "/dashboard/organizations/employees") return "employees";
+  if (path === "/dashboard/organizations/departments") return "departments";
+  if (path === "/dashboard/organizations/teams") return "teams";
+  if (path === "/dashboard/organizations") return "myOrganization";
+  if (path === "/dashboard/reports") return "reports";
+  if (path === "/dashboard/settings") return "settings";
+  if (path === "/dashboard/timesheets") return "timesheets";
+  if (path === "/dashboard/approvals") return "approvals";
+  if (path === "/dashboard/elements") return "elements";
+  return "overview";
+};
 
 export const formatOrganizationId = (value: string) => {
   const compactValue = value.toUpperCase().replace(/[^A-Z0-9]/g, "");

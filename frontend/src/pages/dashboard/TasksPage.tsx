@@ -45,8 +45,7 @@ export function TaskStatusPage({ dashboard, page }: Props & { page: "taskPending
   const current = map[page];
 
   const openTask = (task: WorkflowTask) => {
-    dashboard.setSelectedTaskId(task.id);
-    dashboard.setActivePage("taskDetails");
+    dashboard.openTaskDetails(task.id);
   };
 
   return (

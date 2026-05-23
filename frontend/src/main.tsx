@@ -1,4 +1,5 @@
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { MsalProvider } from "@azure/msal-react";
 import { msalEnabled, msalInstance } from "./auth/authConfig";
@@ -8,10 +9,16 @@ const root = ReactDOM.createRoot(document.getElementById("root")!);
 
 if (msalEnabled && msalInstance) {
   root.render(
-    <MsalProvider instance={msalInstance}>
-      <App msalEnabled />
-    </MsalProvider>,
+    <BrowserRouter>
+      <MsalProvider instance={msalInstance}>
+        <App msalEnabled />
+      </MsalProvider>
+    </BrowserRouter>,
   );
 } else {
-  root.render(<App msalEnabled={false} />);
+  root.render(
+    <BrowserRouter>
+      <App msalEnabled={false} />
+    </BrowserRouter>,
+  );
 }
