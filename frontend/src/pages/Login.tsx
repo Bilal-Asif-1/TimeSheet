@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { getApiBaseUrl } from "../config/env";
+import { getApiError } from "../api/apiError";
+import { api } from "../api/http";
 import AuthField from "./auth/AuthField";
 import LandingView from "./auth/LandingView";
-
-const API_BASE = getApiBaseUrl();
 
 type AppUser = {
   id: number;
@@ -25,6 +24,10 @@ type LoginProps = {
 };
 
 type AuthView = "landing" | "login" | "register";
+type AuthResponse = {
+  token: string;
+  user: AppUser;
+};
 
 export default function Login({
   onAuthSuccess,
@@ -105,25 +108,16 @@ export default function Login({
       }
 
       const endpoint = isLoginView ? "login" : "register";
-      const response = await fetch(`${API_BASE}/auth/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
+      const response = await api.post<AuthResponse>(
+        `/auth/${endpoint}`,
           view === "register"
             ? { name, email, password }
             : { email, password },
-        ),
-      });
+      );
 
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "Authentication failed.");
-      }
-
-      onAuthSuccess(payload.token, payload.user);
+      onAuthSuccess(response.data.token, response.data.user);
     } catch (authError) {
-      const err = authError as Error;
-      setError(err.message);
+      setError(getApiError(authError, "Authentication failed."));
     } finally {
       setSubmitting(false);
     }
