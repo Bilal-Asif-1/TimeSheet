@@ -7,7 +7,7 @@ type AuthFieldProps = {
 
 export default function AuthField({ label, children }: AuthFieldProps) {
   return (
-    <label className="auth-field">
+    <label className="grid gap-1.5 text-[13px] font-extrabold text-slate-50">
       <span>{label}</span>
       {children}
     </label>
