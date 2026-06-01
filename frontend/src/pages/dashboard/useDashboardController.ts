@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getApiBaseUrl } from "../../config/env";
+import axios from "axios";
+import { getApiError } from "../../api/apiError";
+import { api } from "../../api/http";
 import type {
   AppUser,
   Department,
@@ -11,9 +13,9 @@ import type {
 } from "./types";
 import { formatOrganizationId, industries, pageToPath, pathToPage, teamSizes } from "./utils";
 
-const API_BASE = getApiBaseUrl();
-const BASE_URL = `${API_BASE}/timesheet`;
-const TASK_URL = `${API_BASE}/tasks`;
+const API_BASE = String(api.defaults.baseURL || "");
+const BASE_URL = "/timesheet";
+const TASK_URL = "/tasks";
 
 export const emptyOverview: OrganizationOverview = {
   organization: null,
@@ -64,10 +66,7 @@ export function useDashboardController(token: string, user: AppUser) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [isSavingTimesheet, setIsSavingTimesheet] = useState(false);
 
-  const authHeaders = { Authorization: `Bearer ${token}` };
-  const jsonHeaders = { "Content-Type": "application/json", ...authHeaders };
-
-  const failAuth = (status: number) => {
+  const failAuth = (status?: number) => {
     if (status !== 401 && status !== 403) return false;
     localStorage.removeItem("appToken");
     localStorage.removeItem("appUser");
@@ -76,18 +75,18 @@ export function useDashboardController(token: string, user: AppUser) {
   };
 
   const read = async <T,>(url: string, fallback: T, save: (value: T) => void) => {
-    const res = await fetch(url, { headers: authHeaders });
-    const payload = await res.json();
-    if (!res.ok) {
-      if (!failAuth(res.status)) console.error("Load failed:", payload);
+    try {
+      const response = await api.get<T>(url);
+      save(response.data);
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (!failAuth(status)) console.error("Load failed:", getApiError(error));
       save(fallback);
-      return;
     }
-    save(payload);
   };
 
   const loadTimesheets = () => read<TimesheetEntry[]>(BASE_URL, [], (payload) => setData(Array.isArray(payload) ? payload : []));
-  const loadOrganization = () => read<OrganizationOverview>(`${API_BASE}/organization/overview`, emptyOverview, setOverview);
+  const loadOrganization = () => read<OrganizationOverview>("/organization/overview", emptyOverview, setOverview);
   const loadWorkflowTasks = () => read<WorkflowTask[]>(TASK_URL, [], (payload) => setWorkflowTasks(Array.isArray(payload) ? payload : []));
   const reloadAll = async () => Promise.all([loadTimesheets(), loadOrganization(), loadWorkflowTasks()]);
 
@@ -102,11 +101,12 @@ export function useDashboardController(token: string, user: AppUser) {
 
   const postJson = async (url: string, body: unknown, setSaving?: SaveSetter) => {
     setSaving?.(true);
-    const res = await fetch(url, { method: "POST", headers: jsonHeaders, body: JSON.stringify(body) });
-    const payload = await res.json();
-    setSaving?.(false);
-    if (!res.ok) throw new Error(payload.error || "Request failed.");
-    return payload;
+    try {
+      const response = await api.post(url, body);
+      return response.data;
+    } finally {
+      setSaving?.(false);
+    }
   };
 
   const saveSessionAndRefresh = (payload: any, nextPage?: ReturnType<typeof pathToPage>) => {
@@ -121,7 +121,7 @@ export function useDashboardController(token: string, user: AppUser) {
     if (!organization.name.trim() || !organization.id.trim()) return setMessage({ error: "Organization name and ID are required.", success: "" });
     try {
       setMessage({ error: "", success: "" });
-      const payload = await postJson(`${API_BASE}/organization/create`, {
+      const payload = await postJson("/organization/create", {
         organizationName: organization.name, organizationId: organization.id,
         industry: organization.industry, teamSize: organization.teamSize,
       });
@@ -136,7 +136,7 @@ export function useDashboardController(token: string, user: AppUser) {
     if (!join.orgId.trim()) return setMessage({ error: "Organization ID is required.", success: "" });
     try {
       setJoin((value) => ({ ...value, isSaving: true }));
-      const payload = await postJson(`${API_BASE}/auth/join-organization`, { organizationId: join.orgId, department: join.department });
+      const payload = await postJson("/auth/join-organization", { organizationId: join.orgId, department: join.department });
       saveSessionAndRefresh(payload, "organizationDetails");
     } catch (error) {
       setMessage({ error: (error as Error).message, success: "" });
@@ -147,7 +147,7 @@ export function useDashboardController(token: string, user: AppUser) {
 
   const selectOrganization = async (organizationId: number | string, nextPage: ReturnType<typeof pathToPage> = "organizationDetails") => {
     try {
-      const payload = await postJson(`${API_BASE}/organization/select`, { organizationId });
+      const payload = await postJson("/organization/select", { organizationId });
       saveSessionAndRefresh(payload, nextPage);
     } catch (error) {
       setMessage({ error: (error as Error).message, success: "" });
@@ -157,23 +157,20 @@ export function useDashboardController(token: string, user: AppUser) {
   const saveDepartment = async () => {
     if (!department.name.trim()) return setMessage({ error: "Department name is required.", success: "" });
     setDepartment((value) => ({ ...value, isSaving: true }));
-    await postJson(`${API_BASE}/organization/departments`, { name: department.name, description: department.description });
+    await postJson("/organization/departments", { name: department.name, description: department.description });
     setDepartment((value) => ({ ...value, name: "", description: "", isSaving: false }));
     await loadOrganization();
   };
 
   const updateDepartment = async () => {
     if (!department.editId || !department.editName.trim()) return;
-    await fetch(`${API_BASE}/organization/departments/${department.editId}`, {
-      method: "PUT", headers: jsonHeaders,
-      body: JSON.stringify({ name: department.editName, description: department.editDescription }),
-    });
+    await api.put(`/organization/departments/${department.editId}`, { name: department.editName, description: department.editDescription });
     setDepartment((value) => ({ ...value, editId: null, editName: "", editDescription: "" }));
     await loadOrganization();
   };
 
   const deleteDepartment = async (id: number) => {
-    await fetch(`${API_BASE}/organization/departments/${id}`, { method: "DELETE", headers: authHeaders });
+    await api.delete(`/organization/departments/${id}`);
     await loadOrganization();
   };
 
@@ -190,28 +187,33 @@ export function useDashboardController(token: string, user: AppUser) {
     }).forEach(([key, value]) => formData.append(key, value));
     if (taskForm.files) Array.from(taskForm.files).forEach((file) => formData.append("attachments", file));
     setTaskForm((value) => ({ ...value, isSaving: true }));
-    const res = await fetch(TASK_URL, { method: "POST", headers: authHeaders, body: formData });
-    const payload = await res.json();
-    setTaskForm((value) => ({ ...value, isSaving: false }));
-    if (!res.ok) return setMessage({ error: payload.error || "Unable to create task.", success: "" });
-    setTaskForm({ title: "", description: "", assignee: "", priority: "medium", estimate: "", deadline: "", files: null, isSaving: false });
-    await loadWorkflowTasks();
-    setActivePage("tasks");
+    try {
+      await api.post(TASK_URL, formData);
+      setTaskForm({ title: "", description: "", assignee: "", priority: "medium", estimate: "", deadline: "", files: null, isSaving: false });
+      await loadWorkflowTasks();
+      setActivePage("tasks");
+    } catch (error) {
+      setMessage({ error: getApiError(error, "Unable to create task."), success: "" });
+      setTaskForm((value) => ({ ...value, isSaving: false }));
+    }
   };
 
   const runTaskAction = async (taskId: number, action: "start" | "stop") => {
-    const res = await fetch(`${TASK_URL}/${taskId}/${action}`, { method: "POST", headers: authHeaders });
-    if (!res.ok) setMessage({ error: (await res.json()).error || "Task action failed.", success: "" });
-    await loadWorkflowTasks();
+    try {
+      await api.post(`${TASK_URL}/${taskId}/${action}`);
+      await loadWorkflowTasks();
+    } catch (error) {
+      setMessage({ error: getApiError(error, "Task action failed."), success: "" });
+    }
   };
 
   const completeTask = async (taskId: number) => {
     if (!completion.report.trim()) return setMessage({ error: "Completion report is required.", success: "" });
-    const res = await fetch(`${TASK_URL}/${taskId}/complete`, {
-      method: "POST", headers: jsonHeaders,
-      body: JSON.stringify({ completionReport: completion.report, blockers: completion.blockers }),
-    });
-    if (!res.ok) return setMessage({ error: (await res.json()).error || "Unable to complete task.", success: "" });
+    try {
+      await api.post(`${TASK_URL}/${taskId}/complete`, { completionReport: completion.report, blockers: completion.blockers });
+    } catch (error) {
+      return setMessage({ error: getApiError(error, "Unable to complete task."), success: "" });
+    }
     setCompletion({ taskId: null, report: "", blockers: "" });
     await loadWorkflowTasks();
   };
@@ -219,24 +221,21 @@ export function useDashboardController(token: string, user: AppUser) {
   const saveTimesheet = async () => {
     if (!timesheet.task.trim() || !timesheet.hours) return;
     setIsSavingTimesheet(true);
-    await fetch(BASE_URL, { method: "POST", headers: jsonHeaders, body: JSON.stringify({ task: timesheet.task, hours: Number(timesheet.hours) }) });
+    await api.post(BASE_URL, { task: timesheet.task, hours: Number(timesheet.hours) });
     setTimesheet((value) => ({ ...value, task: "", hours: "" }));
     await reloadAll();
     setIsSavingTimesheet(false);
   };
 
   const deleteTimesheet = async (id: number) => {
-    await fetch(`${BASE_URL}/${id}`, { method: "DELETE", headers: authHeaders });
+    await api.delete(`${BASE_URL}/${id}`);
     await reloadAll();
   };
 
   const updateTimesheet = async () => {
     if (!timesheet.editTask.trim() || !timesheet.editHours || timesheet.editId === null) return;
     setIsSavingTimesheet(true);
-    await fetch(`${BASE_URL}/${timesheet.editId}`, {
-      method: "PUT", headers: jsonHeaders,
-      body: JSON.stringify({ task: timesheet.editTask, hours: Number(timesheet.editHours) }),
-    });
+    await api.put(`${BASE_URL}/${timesheet.editId}`, { task: timesheet.editTask, hours: Number(timesheet.editHours) });
     setTimesheet((value) => ({ ...value, editId: null, editTask: "", editHours: "" }));
     await reloadAll();
     setIsSavingTimesheet(false);
