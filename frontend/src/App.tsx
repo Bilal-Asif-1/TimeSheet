@@ -1,13 +1,13 @@
 import { useMsal } from "@azure/msal-react";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { api } from "./api/http";
 import { loginRequest, msalDisabledReason } from "./auth/authConfig";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import MainLayout from "./layout/MainLayout";
-import { getApiBaseUrl, getAppOrigin } from "./config/env";
+import { getAppOrigin } from "./config/env";
 
-const API_BASE = getApiBaseUrl();
 const APP_ORIGIN = getAppOrigin();
 
 type AppUser = {
@@ -23,6 +23,11 @@ type AppUser = {
 
 type AppProps = {
   msalEnabled?: boolean;
+};
+
+type AuthResponse = {
+  token: string;
+  user: AppUser;
 };
 
 function AppWithMsal() {
@@ -50,19 +55,17 @@ function AppWithMsal() {
           account: accounts[0],
         });
 
-        const syncRes = await fetch(`${API_BASE}/auth/microsoft/sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${response.idToken}`,
+        const syncRes = await api.post<AuthResponse>(
+          "/auth/microsoft/sync",
+          undefined,
+          {
+            headers: {
+              Authorization: `Bearer ${response.idToken}`,
+            },
           },
-        });
+        );
 
-        if (!syncRes.ok) {
-          throw new Error("Failed to sync Microsoft user.");
-        }
-
-        const payload = await syncRes.json();
+        const payload = syncRes.data;
         localStorage.setItem("appToken", payload.token);
         localStorage.setItem("appUser", JSON.stringify(payload.user));
         setToken(payload.token);
