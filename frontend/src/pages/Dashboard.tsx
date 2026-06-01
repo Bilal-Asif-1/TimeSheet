@@ -68,11 +68,11 @@ export default function Dashboard({ token, user }: DashboardProps) {
 
 function TaskLoadingPage() {
   return (
-    <section className="workspace-grid single-panel task-status-page">
-      <div className="workspace-card">
-        <p className="eyebrow">Task Details</p>
-        <h2>Loading task</h2>
-        <p className="muted">We are opening this task from the current workspace.</p>
+    <section className="mx-auto grid w-full max-w-3xl">
+      <div className="rounded-[26px] border border-white/10 bg-white/[0.05] p-6 shadow-[0_22px_70px_rgba(0,0,0,0.32)]">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-white/45">Task Details</p>
+        <h2 className="text-2xl font-semibold text-white">Loading task</h2>
+        <p className="mt-2 text-sm text-white/55">We are opening this task from the current workspace.</p>
       </div>
     </section>
   );

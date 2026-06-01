@@ -29,6 +29,13 @@ type AuthResponse = {
   user: AppUser;
 };
 
+const inputClass =
+  "min-h-11 rounded-xl border border-white/15 bg-white/10 px-3.5 py-3 text-[15px] text-white outline-none placeholder:text-gray-400 focus:border-white/70 focus:ring-4 focus:ring-white/10";
+const authShellClass =
+  "min-h-screen overflow-auto bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.14),transparent_24%),radial-gradient(circle_at_84%_20%,rgba(255,255,255,0.1),transparent_26%),linear-gradient(135deg,#050505_0%,#111111_42%,#1f2937_100%)] text-slate-50";
+const cardClass =
+  "relative w-full self-center rounded-[28px] border border-white/15 bg-[radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(145deg,rgba(8,8,8,0.94),rgba(31,41,55,0.9))] p-7 text-slate-50 shadow-[0_30px_80px_rgba(0,0,0,0.46)]";
+
 export default function Login({
   onAuthSuccess,
   onMicrosoftLogin,
@@ -136,28 +143,34 @@ export default function Login({
   }
 
   return (
-    <div className="flow-auth-shell timesheet-landing-shell auth-only-landing">
-      <main className="auth-experience">
-        <section className={`auth-card-pro${view === "register" ? " register-card-pro" : ""}`}>
+    <div className={authShellClass}>
+      <main className="mx-auto flex min-h-screen max-w-[720px] items-center justify-center p-6">
+        <section className={`${cardClass}${view === "register" ? " max-w-[560px] p-6" : ""}`}>
           <button
-            className="form-back-button"
+            className="mb-3 grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/10 text-xl text-white transition hover:-translate-x-0.5 hover:bg-white/15"
             type="button"
             onClick={() => switchView("landing")}
             aria-label="Back to landing"
           >
             ←
           </button>
-          <div className="auth-form-brand">TimeSheet</div>
-          <p className="flow-eyebrow">{viewCopy.eyebrow}</p>
-          <h1>{viewCopy.title}</h1>
-          <p className="auth-subtitle">{viewCopy.subtitle}</p>
+          <div className="mb-3.5 inline-block bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-[28px] font-black tracking-normal text-transparent">
+            TimeSheet
+          </div>
+          <p className="mb-3 text-xs font-extrabold uppercase tracking-normal text-slate-300">{viewCopy.eyebrow}</p>
+          <h1 className={`${view === "register" ? "text-[31px]" : "text-[34px]"} mb-2 font-extrabold leading-tight text-white`}>
+            {viewCopy.title}
+          </h1>
+          <p className={`${view === "register" ? "mb-4 text-sm" : "mb-[18px]"} leading-[1.45] text-slate-300`}>
+            {viewCopy.subtitle}
+          </p>
 
-          <div className="form-grid">
+          <div className={`grid ${view === "register" ? "gap-[11px]" : "gap-3"}`}>
             {isLoginView && (
               <>
                 <AuthField label="Username or Email Address">
                   <input
-                    className="auth-input"
+                    className={inputClass}
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
@@ -166,7 +179,7 @@ export default function Login({
                 </AuthField>
                 <AuthField label="Password">
                   <input
-                    className="auth-input"
+                    className={inputClass}
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
@@ -180,7 +193,7 @@ export default function Login({
               <>
                 <AuthField label="Full Name">
                   <input
-                    className="auth-input"
+                    className={inputClass}
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     placeholder="John Doe"
@@ -188,7 +201,7 @@ export default function Login({
                 </AuthField>
                 <AuthField label="Work Email">
                   <input
-                    className="auth-input"
+                    className={inputClass}
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
@@ -197,7 +210,7 @@ export default function Login({
                 </AuthField>
                 <AuthField label="Password">
                   <input
-                    className="auth-input"
+                    className={inputClass}
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
@@ -209,8 +222,9 @@ export default function Login({
           </div>
 
           {isLoginView && (
-            <label className="remember-row enterprise-row">
+            <label className="my-3.5 flex items-center justify-start gap-3 text-sm font-bold text-slate-200">
               <input
+                className="h-[22px] w-[22px]"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(event) => setRememberMe(event.target.checked)}
@@ -220,27 +234,37 @@ export default function Login({
           )}
 
           {msalEnabled && isLoginView ? (
-            <button className="btn ms-btn" type="button" onClick={handleMicrosoftLogin} disabled={isMicrosoftLoading}>
-              <span className="ms-logo" aria-hidden="true">
-                <span className="ms-tile ms-red" />
-                <span className="ms-tile ms-green" />
-                <span className="ms-tile ms-blue" />
-                <span className="ms-tile ms-yellow" />
+            <button
+              className="mb-3 flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-white/20 bg-zinc-700 px-5 text-[15px] font-extrabold text-slate-50 transition hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={handleMicrosoftLogin}
+              disabled={isMicrosoftLoading}
+            >
+              <span className="grid size-4 grid-cols-2 gap-0.5" aria-hidden="true">
+                <span className="bg-[#f25022]" />
+                <span className="bg-[#7fba00]" />
+                <span className="bg-[#00a4ef]" />
+                <span className="bg-[#ffb900]" />
               </span>
               <span>{isMicrosoftLoading ? "Please wait..." : "Sign in with Microsoft"}</span>
             </button>
           ) : (
-            isLoginView && msalDisabledReason && <p className="muted">{msalDisabledReason}</p>
+            isLoginView && msalDisabledReason && <p className="text-sm text-slate-400">{msalDisabledReason}</p>
           )}
 
-          {error && <p className="error-text">{error}</p>}
+          {error && <p className="my-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">{error}</p>}
 
-          <button className="btn btn-primary btn-full" type="button" onClick={submitAuth} disabled={submitting}>
+          <button
+            className={`${view === "register" ? "mt-3" : ""} min-h-11 w-full rounded-xl bg-zinc-600 px-5 font-extrabold text-white transition hover:bg-zinc-500 disabled:cursor-not-allowed disabled:opacity-60`}
+            type="button"
+            onClick={submitAuth}
+            disabled={submitting}
+          >
             {submitting ? "Working..." : viewCopy.primary}
           </button>
 
           <button
-            className="auth-switch-link"
+            className="mt-3 w-full border-0 bg-transparent text-sm font-extrabold text-zinc-300 transition hover:text-white"
             type="button"
             onClick={() => switchView(isLoginView ? "register" : "login")}
           >

@@ -7,32 +7,43 @@ type Props = {
   hasOrganization: boolean;
 };
 
+const baseLink =
+  "inline-flex min-h-[38px] items-center rounded-xl border px-3.5 text-[13px] font-black no-underline";
+const normalLink = ({ isActive }: { isActive: boolean }) =>
+  `${baseLink} ${
+    isActive
+      ? "border-white/15 bg-white/10 text-white"
+      : "border-transparent bg-transparent text-zinc-400 hover:border-white/15 hover:bg-white/10 hover:text-white"
+  }`;
+const lightLink = ({ isActive }: { isActive: boolean }) =>
+  `${baseLink} ${isActive ? "bg-white" : "bg-zinc-200 hover:bg-white"} border-white/70 text-gray-900`;
+
 export function OrganizationTopNav({ activePage, hasOrganization }: Props) {
   const homeLabel = activePage === "myOrganization" || activePage === "createOrganization" ? "Organizations" : "Home";
   const homePath = hasOrganization ? pageToPath("organizationDetails") : pageToPath("myOrganization");
 
   return (
-    <div className="organization-top-nav">
-      <NavLink className={({ isActive }) => (isActive ? "active" : "")} to={homePath}>
+    <div className="sticky top-24 z-[18] flex flex-wrap gap-2.5 rounded-[18px] border border-white/10 bg-black/80 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.28)] backdrop-blur-[18px]">
+      <NavLink className={normalLink} to={homePath}>
         {homeLabel}
       </NavLink>
       {hasOrganization ? (
         <>
-          <NavLink className={({ isActive }) => (isActive ? "active" : "")} to={pageToPath("employees")}>Employees</NavLink>
-          <NavLink className={({ isActive }) => (isActive ? "active" : "")} to={pageToPath("departments")}>Departments</NavLink>
+          <NavLink className={normalLink} to={pageToPath("employees")}>Employees</NavLink>
+          <NavLink className={normalLink} to={pageToPath("departments")}>Departments</NavLink>
         </>
       ) : (
         <>
-          <span className="disabled-nav-link">Employees</span>
-          <span className="disabled-nav-link">Departments</span>
+          <span className={`${baseLink} cursor-not-allowed border-transparent text-zinc-400 opacity-45`}>Employees</span>
+          <span className={`${baseLink} cursor-not-allowed border-transparent text-zinc-400 opacity-45`}>Departments</span>
         </>
       )}
       {(activePage === "myOrganization" || activePage === "createOrganization") && (
-        <NavLink className={({ isActive }) => `organization-create-nav-button${isActive ? " active" : ""}`} to={pageToPath("createOrganization")}>
+        <NavLink className={lightLink} to={pageToPath("createOrganization")}>
           Create Organization
         </NavLink>
       )}
-      <NavLink className="organization-exit-button" to={pageToPath("overview")}>
+      <NavLink className={`${baseLink} ml-auto border-white/70 bg-zinc-200 text-gray-900 hover:bg-white`} to={pageToPath("overview")}>
         Back to Dashboard
       </NavLink>
     </div>

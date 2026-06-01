@@ -20,13 +20,13 @@ export function TaskCard({ activeOrganizationId, item, onOpen, onSwitchOrganizat
   };
 
   return (
-    <div className={`task-board-card workflow-task-card priority-${item.priority}`} onClick={openTask} role="button" tabIndex={0}>
-      <div className="workflow-task-card-top">
-        <span>{item.priority}</span>
-        <small>{formatDate(item.deadlineAt)}</small>
+    <div className="grid cursor-pointer gap-1.5 rounded-2xl border border-white/10 bg-white/[0.06] p-3.5 text-white transition hover:border-white/30 hover:bg-white/10" onClick={openTask} role="button" tabIndex={0}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-black uppercase text-white">{item.priority}</span>
+        <small className="text-xs text-zinc-400">{formatDate(item.deadlineAt)}</small>
       </div>
       <button
-        className="task-org-chip"
+        className="w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-zinc-200"
         onClick={(event) => {
           event.stopPropagation();
           if (isActiveOrganization) openTask();
@@ -36,8 +36,8 @@ export function TaskCard({ activeOrganizationId, item, onOpen, onSwitchOrganizat
       >
         {item.organization.name} · {item.organization.orgCode}
       </button>
-      <strong>{item.title}</strong>
-      <div className="workflow-task-meta compact">
+      <strong className="text-base">{item.title}</strong>
+      <div className="flex items-center justify-between gap-3 text-sm text-zinc-400">
         <span>{item.assignedTo.name}</span>
         <span>{formatDuration(trackedSeconds)}</span>
       </div>

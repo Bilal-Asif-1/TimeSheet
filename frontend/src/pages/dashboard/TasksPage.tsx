@@ -4,6 +4,8 @@ import { TaskCard } from "./TaskCard";
 import type { WorkflowTask, WorkspacePage } from "./types";
 
 type Props = { dashboard: DashboardController };
+const cardClass =
+  "rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_90%_10%,rgba(255,255,255,0.1),transparent_24%),linear-gradient(145deg,rgba(10,10,10,0.94),rgba(31,41,55,0.9))] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.36)]";
 
 export function TasksPage({ dashboard }: Props) {
   const { setActivePage, totals, workflowTasks, user } = dashboard;
@@ -12,13 +14,13 @@ export function TasksPage({ dashboard }: Props) {
 
   return (
     <>
-      <section className="workspace-grid single-panel task-toolbar-grid">
-        <div className="workspace-card task-toolbar-card">
-          <div className="section-heading">
-            <div><p className="eyebrow">Workflow</p><h2>Task control center</h2></div>
-            <button className="btn btn-primary" onClick={() => setActivePage("createTask")} type="button">Create Task</button>
+      <section className="grid">
+        <div className={cardClass}>
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div><p className="text-xs font-extrabold uppercase text-zinc-400">Workflow</p><h2 className="text-2xl font-black text-white">Task control center</h2></div>
+            <button className="min-h-11 rounded-xl bg-zinc-600 px-5 font-extrabold text-white transition hover:bg-zinc-500" onClick={() => setActivePage("createTask")} type="button">Create Task</button>
           </div>
-          <div className="task-insight-grid">
+          <div className="grid grid-cols-4 gap-3">
             <InfoTile className="task-kpi-tile" label="Assigned to me" value={String(assignedToMe.length)} />
             <InfoTile className="task-kpi-tile" label="Created by me" value={String(createdByMe.length)} />
             <InfoTile className="task-kpi-tile" label="Running now" value={String(totals.active.length)} />
@@ -27,7 +29,7 @@ export function TasksPage({ dashboard }: Props) {
         </div>
       </section>
 
-      <section className="workspace-grid task-summary-grid">
+      <section className="grid grid-cols-3 gap-4">
         <Summary title="Pending" count={totals.pending.length} text="New assignments waiting to be started." onClick={() => setActivePage("taskPending")} />
         <Summary title="In progress" count={totals.active.length} text="Running work with active timers." onClick={() => setActivePage("taskProgress")} />
         <Summary title="Completed" count={totals.completed.length} text="Submitted work reports and finished tasks." onClick={() => setActivePage("taskCompleted")} />
@@ -49,14 +51,14 @@ export function TaskStatusPage({ dashboard, page }: Props & { page: "taskPending
   };
 
   return (
-    <section className="workspace-grid single-panel task-status-page">
-      <div className="organization-page-header">
-        <div><p className="eyebrow">{current.eyebrow}</p><h2>{current.title}</h2></div>
-        <button className="btn btn-secondary" type="button" onClick={() => dashboard.setActivePage("tasks")}>Back</button>
+    <section className="grid w-full gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <div><p className="text-xs font-extrabold uppercase text-zinc-400">{current.eyebrow}</p><h2 className="text-2xl font-black text-white">{current.title}</h2></div>
+        <button className="min-h-11 rounded-xl bg-zinc-700 px-5 font-extrabold text-white transition hover:bg-zinc-600" type="button" onClick={() => dashboard.setActivePage("tasks")}>Back</button>
       </div>
-      <div className="workspace-card task-list-card">
+      <div className={`${cardClass} p-2.5`}>
         <div className="task-detail-list">
-          {current.items.length === 0 && <p className="muted">{current.empty}</p>}
+          {current.items.length === 0 && <p className="text-sm text-zinc-400">{current.empty}</p>}
           {current.items.map((item) => (
             <TaskCard
               activeOrganizationId={dashboard.overview.organization?.id}
@@ -74,11 +76,11 @@ export function TaskStatusPage({ dashboard, page }: Props & { page: "taskPending
 
 function Summary({ count, onClick, text, title }: { count: number; onClick: () => void; text: string; title: string }) {
   return (
-    <button className="workspace-card task-summary-card" onClick={onClick} type="button">
-      <span>Tasks</span>
-      <strong>{title}</strong>
-      <small>{count}</small>
-      <p>{text}</p>
+    <button className={`${cardClass} grid min-h-40 gap-2 text-left text-white transition hover:border-white/30 hover:bg-white/10`} onClick={onClick} type="button">
+      <span className="text-xs font-black text-zinc-400">Tasks</span>
+      <strong className="text-[26px]">{title}</strong>
+      <small className="grid h-[34px] w-[42px] place-items-center rounded-full border border-white/15 bg-white/10 text-sm font-black text-white">{count}</small>
+      <p className="text-[13px] leading-6 text-zinc-400">{text}</p>
     </button>
   );
 }
