@@ -11,6 +11,7 @@ const toneLine = {
   neutral: "after:bg-zinc-300",
 };
 
+// Dashboard ke repeated KPI, status aur information cards is file se reuse hote hain.
 export function KpiCard({ label, note, tone, value, onClick }: { label: string; note: string; tone: string; value: number; onClick?: () => void }) {
   const className = `${kpiBase} ${toneLine[tone as keyof typeof toneLine] || toneLine.neutral} ${
     onClick ? "w-full cursor-pointer transition hover:-translate-y-0.5 hover:border-white/30" : ""

@@ -19,6 +19,7 @@ const lightLink = ({ isActive }: { isActive: boolean }) =>
   `${baseLink} ${isActive ? "bg-white" : "bg-zinc-200 hover:bg-white"} border-white/70 text-gray-900`;
 
 export function OrganizationTopNav({ activePage, hasOrganization }: Props) {
+  // Organization available ho to Home uski detail par, warna organizations list par jata hai.
   const homeLabel = activePage === "myOrganization" || activePage === "createOrganization" ? "Organizations" : "Home";
   const homePath = hasOrganization ? pageToPath("organizationDetails") : pageToPath("myOrganization");
 

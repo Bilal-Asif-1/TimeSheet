@@ -6,6 +6,7 @@ type Props = { dashboard: DashboardController };
 const cardClass = "rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_90%_10%,rgba(255,255,255,0.1),transparent_24%),linear-gradient(145deg,rgba(10,10,10,0.94),rgba(31,41,55,0.9))] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.36)]";
 const heading = (eyebrow: string, title: string) => <div className="mb-4"><p className="text-xs font-extrabold uppercase text-zinc-400">{eyebrow}</p><h2 className="text-2xl font-black text-white">{title}</h2></div>;
 
+// Chote related pages ek file mein hain; complex hone par inhein alag files mein split kiya ja sakta hai.
 export function ReportsPage({ dashboard }: Props) {
   const { overview, totals } = dashboard;
   return (

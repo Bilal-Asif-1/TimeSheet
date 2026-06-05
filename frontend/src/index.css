@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Puri application ke basic browser defaults yahan set hote hain. */
 @layer base {
   html {
     background: #050505;
@@ -18,6 +19,7 @@
   input,
   select,
   textarea {
+    /* Form controls bhi body wala same font inherit karte hain. */
     font: inherit;
   }
 

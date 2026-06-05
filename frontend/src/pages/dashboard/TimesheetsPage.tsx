@@ -9,6 +9,7 @@ const secondaryButton = "rounded-2xl border border-white/15 bg-white/10 px-4 py-
 const dangerButton = "rounded-2xl border border-red-300/25 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/20";
 
 export function TimesheetsPage({ dashboard }: Props) {
+  // Timesheet data aur CRUD actions central dashboard controller provide karta hai.
   const { data, isSavingTimesheet, setTimesheet, timesheet, totals } = dashboard;
 
   return (
@@ -33,6 +34,7 @@ export function TimesheetsPage({ dashboard }: Props) {
         {data.length === 0 && <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">No entries yet. Add your first task above.</p>}
         {data.map((item) => (
           <div key={item.id} className="rounded-3xl border border-white/10 bg-black/25 p-4">
+            {/* Selected editId wali entry inline edit form mein badal jati hai. */}
             {timesheet.editId === item.id ? (
               <div className="grid gap-3 lg:grid-cols-[1.5fr_0.7fr_auto]">
                 <input className={inputClass} value={timesheet.editTask} onChange={(event) => setTimesheet({ ...timesheet, editTask: event.target.value })} />

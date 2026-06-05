@@ -1,3 +1,4 @@
+// Is file mein dashboard API data aur page states ki shared TypeScript shapes hain.
 export type AppUser = {
   id: number;
   name: string;
@@ -74,6 +75,7 @@ export type TaskAttachment = {
 };
 
 export type WorkflowTask = {
+  // Task ke sath organization, assignee, creator aur attachments bhi backend se aate hain.
   id: number;
   title: string;
   description?: string | null;
@@ -94,6 +96,7 @@ export type WorkflowTask = {
 };
 
 export type WorkspacePage =
+  // Ye allowed dashboard page names hain jo navigation helpers mein use hote hain.
   | "overview"
   | "tasks"
   | "timesheets"

@@ -10,6 +10,7 @@ const primaryButton = "rounded-2xl border border-white/15 bg-white px-5 py-3 tex
 const secondaryButton = "rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60";
 
 export function CreateOrganizationCard({ dashboard }: Props) {
+  // Form ki state aur submit action dashboard controller se aate hain.
   const { formatOrganizationId, message, organization, setOrganization } = dashboard;
   return (
     <section className={cardClass}>
@@ -34,6 +35,7 @@ export function CreateOrganizationCard({ dashboard }: Props) {
 }
 
 export function JoinOrganizationCard({ dashboard }: Props) {
+  // User shared Organization ID aur optional department de kar workspace join karta hai.
   const { formatOrganizationId, join, message, setJoin } = dashboard;
   return (
     <section className={cardClass}>

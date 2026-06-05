@@ -6,6 +6,7 @@ type MainLayoutProps = {
 };
 
 function MainLayout({ children, userName, onLogout, isLoggingOut }: MainLayoutProps) {
+  // Ye outer logged-in layout top navbar ke neeche dashboard ko render karta hai.
   return (
     <div className="min-h-screen bg-[#050505] text-white">
       <header className="sticky top-4 z-40 mx-auto mb-6 flex w-[min(1280px,calc(100%-32px))] items-center justify-between rounded-[28px] border border-white/10 bg-white/[0.08] px-5 py-4 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl">

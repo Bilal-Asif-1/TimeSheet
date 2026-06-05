@@ -9,6 +9,7 @@ const cardClass = "rounded-[26px] border border-white/10 bg-white/[0.05] p-6 sha
 export function OrganizationDetailsPage({ dashboard }: Props) {
   const { overview, user } = dashboard;
   const organization = overview.organization;
+  // Organization select na ho to detail UI render nahi ki jati.
   if (!organization) return null;
 
   return (

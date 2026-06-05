@@ -9,12 +9,14 @@ type Props = {
 };
 
 export function TaskCard({ activeOrganizationId, item, onOpen, onSwitchOrganization }: Props) {
+  // Task doosri organization ka ho to pehle woh organization active karni hoti hai.
   const isActiveOrganization = item.organization.id === activeOrganizationId;
   const nextPage = item.status === "pending" ? "taskPending" : item.status === "in_progress" ? "taskProgress" : "taskCompleted";
   const runningSeconds = item.startedAt ? Math.floor((Date.now() - new Date(item.startedAt).getTime()) / 1000) : 0;
   const trackedSeconds = item.totalSeconds + runningSeconds;
 
   const openTask = () => {
+    // Active organization ka task direct open hota hai, warna organization switch hoti hai.
     if (isActiveOrganization) onOpen(item);
     else onSwitchOrganization(item.organization.id, nextPage);
   };

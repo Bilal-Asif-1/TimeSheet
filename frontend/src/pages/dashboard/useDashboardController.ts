@@ -30,6 +30,7 @@ export const emptyOverview: OrganizationOverview = {
 type SaveSetter = (value: boolean) => void;
 
 export function useDashboardController(token: string, user: AppUser) {
+  // URL se current dashboard page aur selected task id nikali jati hai.
   const location = useLocation();
   const navigate = useNavigate();
   const activePage = pathToPage(location.pathname);
@@ -45,6 +46,7 @@ export function useDashboardController(token: string, user: AppUser) {
     },
     [navigate],
   );
+  // Neeche dashboard data aur tamam forms ki local state rakhi gayi hai.
   const [data, setData] = useState<TimesheetEntry[]>([]);
   const [overview, setOverview] = useState<OrganizationOverview>(emptyOverview);
   const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>([]);
@@ -67,6 +69,7 @@ export function useDashboardController(token: string, user: AppUser) {
   const [isSavingTimesheet, setIsSavingTimesheet] = useState(false);
 
   const failAuth = (status?: number) => {
+    // Expired/invalid token par session clear karke login screen reload hoti hai.
     if (status !== 401 && status !== 403) return false;
     localStorage.removeItem("appToken");
     localStorage.removeItem("appUser");
@@ -75,6 +78,7 @@ export function useDashboardController(token: string, user: AppUser) {
   };
 
   const read = async <T,>(url: string, fallback: T, save: (value: T) => void) => {
+    // Common GET helper success par data aur failure par safe fallback save karta hai.
     try {
       const response = await api.get<T>(url);
       save(response.data);
@@ -91,10 +95,12 @@ export function useDashboardController(token: string, user: AppUser) {
   const reloadAll = async () => Promise.all([loadTimesheets(), loadOrganization(), loadWorkflowTasks()]);
 
   useEffect(() => {
+    // Login token milte hi dashboard ka tamam initial data parallel load hota hai.
     reloadAll();
   }, [token]);
 
   useEffect(() => {
+    // Har second state refresh hoti hai taake running task timer screen par update rahe.
     const timer = window.setInterval(() => setTick((value) => value + 1), 1000);
     return () => window.clearInterval(timer);
   }, []);
@@ -110,6 +116,7 @@ export function useDashboardController(token: string, user: AppUser) {
   };
 
   const saveSessionAndRefresh = (payload: any, nextPage?: ReturnType<typeof pathToPage>) => {
+    // Organization create/select ke baad naya token save karke relevant page reload hota hai.
     localStorage.setItem("appToken", payload.token);
     localStorage.setItem("appUser", JSON.stringify(payload.user));
     window.setTimeout(() => {
@@ -179,6 +186,7 @@ export function useDashboardController(token: string, user: AppUser) {
   };
 
   const createWorkflowTask = async () => {
+    // Files ki wajah se task JSON ke bajaye FormData ke zariye backend ko bheja jata hai.
     if (!taskForm.title.trim() || !taskForm.assignee) return setMessage({ error: "Task title and assignee are required.", success: "" });
     const formData = new FormData();
     Object.entries({
@@ -199,6 +207,7 @@ export function useDashboardController(token: string, user: AppUser) {
   };
 
   const runTaskAction = async (taskId: number, action: "start" | "stop") => {
+    // Start/stop ke baad tasks reload hote hain taake timer status fresh rahe.
     try {
       await api.post(`${TASK_URL}/${taskId}/${action}`);
       await loadWorkflowTasks();
@@ -242,6 +251,7 @@ export function useDashboardController(token: string, user: AppUser) {
   };
 
   const totals = useMemo(() => {
+    // Raw tasks/timesheets se dashboard KPI values sirf data change par calculate hoti hain.
     const totalHours = data.reduce((sum, item) => sum + Number(item.hours || 0), 0);
     const pending = workflowTasks.filter((item) => item.status === "pending");
     const active = workflowTasks.filter((item) => item.status === "in_progress");

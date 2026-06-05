@@ -10,6 +10,7 @@ import { getAppOrigin } from "./config/env";
 
 const APP_ORIGIN = getAppOrigin();
 
+// Login ke baad frontend ko backend se isi shape ka user milta hai.
 type AppUser = {
   id: number;
   name: string;
@@ -31,6 +32,7 @@ type AuthResponse = {
 };
 
 function AppWithMsal() {
+  // Ye component local login aur Microsoft login dono ko support karta hai.
   const { accounts, instance, inProgress } = useMsal();
   const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("appToken"));
@@ -42,7 +44,7 @@ function AppWithMsal() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    // When MSAL account exists, exchange Microsoft token for our own app JWT.
+    // Microsoft login ke token ko backend ke apne JWT token mein badla jata hai.
     const syncMicrosoftUser = async () => {
       if (accounts.length === 0 || token) {
         return;
@@ -87,13 +89,13 @@ function AppWithMsal() {
       setLoggingOut(true);
       const hasMicrosoftSession = accounts.length > 0 || user?.provider === "microsoft";
 
-      // Always clear local app session first so UI logs out immediately.
+      // Pehle local session clear hota hai taake UI foran logout ho jaye.
       localStorage.removeItem("appToken");
       localStorage.removeItem("appUser");
       setToken(null);
       setUser(null);
 
-      // End Microsoft session too when account exists.
+      // Microsoft account use hua ho to Microsoft ki session bhi close hoti hai.
       if (hasMicrosoftSession) {
         await instance.logoutRedirect({
           account: accounts[0],
@@ -102,11 +104,11 @@ function AppWithMsal() {
         return;
       }
 
-      // Local auth users should also land back on login screen immediately.
+      // Local user ko seedha login page par wapas bheja jata hai.
       navigate("/", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
-      // Fallback: still bring user to login UI even if Microsoft logout throws.
+      // Microsoft logout fail ho tab bhi user ko login screen par le aate hain.
       navigate("/", { replace: true });
     } finally {
       setLoggingOut(false);
@@ -114,6 +116,7 @@ function AppWithMsal() {
   };
 
   const handleLocalAuthSuccess = (nextToken: string, nextUser: AppUser) => {
+    // Successful login/register ke baad token aur user browser mein save hote hain.
     localStorage.setItem("appToken", nextToken);
     localStorage.setItem("appUser", JSON.stringify(nextUser));
     setToken(nextToken);
@@ -141,6 +144,7 @@ function AppWithMsal() {
   }
 
   if (!isLoggedIn) {
+    // Token ya user na ho to sirf login/registration screen dikhai jati hai.
     return (
       <Routes>
         <Route
@@ -158,6 +162,7 @@ function AppWithMsal() {
     );
   }
 
+  // Logged-in user ke liye dashboard protected route par render hota hai.
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -175,6 +180,7 @@ function AppWithMsal() {
 }
 
 function AppLocalOnly() {
+  // Ye version Microsoft auth ke baghair sirf email/password login chalata hai.
   const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("appToken"));
   const [user, setUser] = useState<AppUser | null>(() => {
@@ -195,6 +201,7 @@ function AppLocalOnly() {
   };
 
   const handleLocalAuthSuccess = (nextToken: string, nextUser: AppUser) => {
+    // Local auth response ko save karke dashboard open kiya jata hai.
     localStorage.setItem("appToken", nextToken);
     localStorage.setItem("appUser", JSON.stringify(nextUser));
     setToken(nextToken);
@@ -249,5 +256,6 @@ function AppLocalOnly() {
 }
 
 export default function App({ msalEnabled = true }: AppProps) {
+  // Environment ke auth mode ke mutabiq sahi app version select hota hai.
   return msalEnabled ? <AppWithMsal /> : <AppLocalOnly />;
 }

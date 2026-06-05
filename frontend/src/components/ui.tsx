@@ -8,6 +8,7 @@ const buttonTone: Record<ButtonTone, string> = {
   danger: "border-red-300/25 bg-red-400/10 text-red-100 hover:bg-red-400/20",
 };
 
+// Common UI components se pages mein repeated Tailwind classes kam hoti hain.
 export function Button({ className = "", tone = "secondary", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { tone?: ButtonTone }) {
   return (
     <button
@@ -39,6 +40,7 @@ export function PageHeader({ eyebrow, title, action }: { eyebrow: string; title:
 }
 
 export function Field(props: InputHTMLAttributes<HTMLInputElement>) {
+  // Props spread karne se normal input ke tamam attributes available rehte hain.
   return <input className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-3 text-white outline-none placeholder:text-zinc-400 focus:border-white/70 focus:ring-4 focus:ring-white/10" {...props} />;
 }
 

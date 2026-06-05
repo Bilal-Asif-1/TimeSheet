@@ -5,6 +5,7 @@ type ApiErrorBody = {
   message?: string;
 };
 
+// Axios, JavaScript aur unknown errors ko ek simple message mein convert karta hai.
 export function getApiError(error: unknown, fallback = "Something went wrong.") {
   if (axios.isAxiosError<ApiErrorBody>(error)) {
     return error.response?.data?.error || error.response?.data?.message || error.message || fallback;

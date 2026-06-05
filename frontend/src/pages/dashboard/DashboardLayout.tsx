@@ -22,6 +22,7 @@ export function DashboardLayout({
   showOrganizationTopNav,
   user,
 }: Props) {
+  // Organization ke andar sidebar hide hoti hai; normal dashboard par fixed sidebar rehti hai.
   const shellClass = isOrganizationArea ? "block pl-0" : "block pl-[240px]";
   const sidebarClass =
     `fixed left-[max(24px,calc((100vw-1280px)/2))] top-28 z-20 flex min-h-[calc(100vh-148px)] max-h-[calc(100vh-148px)] w-[220px] flex-col gap-3.5 rounded-[22px] border border-white/10 p-4 text-white shadow-[0_24px_70px_rgba(0,0,0,0.36)] ${cardGradient}`;
@@ -38,6 +39,7 @@ export function DashboardLayout({
         <aside className={sidebarClass}>
           <div className="bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-[21px] font-black text-transparent">Workspace</div>
           <nav className="grid gap-1.5" aria-label="Workspace sections">
+            {/* Central workspacePages list se sidebar links automatically bante hain. */}
             {workspacePages.map((page) => (
               <NavLink className={linkClass} end={page.id === "overview"} key={page.id} to={pageToPath(page.id)}>
                 {page.label}

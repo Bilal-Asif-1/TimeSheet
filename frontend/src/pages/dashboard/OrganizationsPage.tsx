@@ -12,6 +12,7 @@ const primaryButton = "rounded-2xl border border-white/15 bg-white px-4 py-3 tex
 export function OrganizationsPage({ dashboard }: Props) {
   const { message, organization, overview, setActivePage, setOrganization } = dashboard;
 
+  // Owned aur joined organizations alag sections mein dikhai jati hain.
   return (
     <section className="grid gap-6">
       <div className={cardClass}>
@@ -78,6 +79,7 @@ function List({ dashboard, items, title }: { dashboard: DashboardController; ite
 }
 
 function OrganizationCard({ dashboard, item }: { dashboard: DashboardController; item: OrganizationMembership }) {
+  // Active organization seedha open hoti hai; doosri organization pehle backend mein select hoti hai.
   return (
     <button
       className={`rounded-3xl border p-5 text-left transition hover:-translate-y-0.5 ${item.isActive ? "border-white/35 bg-white/14" : "border-white/10 bg-black/25 hover:border-white/25 hover:bg-white/10"}`}

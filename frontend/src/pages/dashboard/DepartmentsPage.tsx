@@ -10,6 +10,7 @@ const dangerButton = "rounded-2xl border border-red-300/25 bg-red-400/10 px-4 py
 
 export function DepartmentsPage({ dashboard }: Props) {
   const { department, message, overview, setDepartment, user } = dashboard;
+  // Sirf founder/manager department create, edit ya delete kar sakta hai.
   const canManage = user.role === "ceo" || user.role === "manager";
 
   if (!overview.organization) return null;
@@ -35,6 +36,7 @@ export function DepartmentsPage({ dashboard }: Props) {
           {overview.departments.length === 0 && <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">No departments yet.</p>}
           {overview.departments.map((item) => (
             <div className="rounded-3xl border border-white/10 bg-black/25 p-5" key={item.id}>
+              {/* Jis department ka editId match kare uski normal row ki jagah edit form aata hai. */}
               {department.editId === item.id ? (
                 <div className="grid gap-3 lg:grid-cols-[1fr_1.5fr_auto]">
                   <input className={inputClass} value={department.editName} onChange={(event) => setDepartment({ ...department, editName: event.target.value })} />

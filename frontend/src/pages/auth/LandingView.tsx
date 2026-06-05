@@ -6,6 +6,7 @@ type LandingViewProps = {
   onRegister: () => void;
 };
 
+// Landing page ki Tailwind classes ek jagah rakhne se JSX chota aur readable rehta hai.
 const styles = {
   shell:
     "h-screen overflow-hidden bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.14),transparent_24%),radial-gradient(circle_at_84%_20%,rgba(255,255,255,0.1),transparent_26%),linear-gradient(135deg,#050505_0%,#111111_42%,#1f2937_100%)] text-slate-50",
@@ -40,6 +41,7 @@ export default function LandingView({
   onLogin,
   onRegister,
 }: LandingViewProps) {
+  // Ye auth form se pehle product intro aur login/register actions dikhata hai.
   return (
     <div className={styles.shell}>
       <main className={styles.main}>

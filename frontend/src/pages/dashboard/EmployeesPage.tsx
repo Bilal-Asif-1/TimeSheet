@@ -9,10 +9,12 @@ const primaryButton = "w-full rounded-2xl border border-white/15 bg-white px-5 p
 
 export function EmployeesPage({ dashboard }: Props) {
   const { overview, selectedEmployeeId, setActivePage, setSelectedEmployeeId, setTaskForm, taskForm } = dashboard;
+  // Left list se selected employee ki complete profile right panel mein dikhai jati hai.
   const selected = overview.employees.find((employee) => employee.id === selectedEmployeeId) || null;
   if (!overview.organization) return null;
 
   const assignTask = (employeeId: number) => {
+    // Employee pehle se task form mein select hota hai, phir create task page khulta hai.
     setTaskForm({ ...taskForm, assignee: String(employeeId) });
     setActivePage("createTask");
   };

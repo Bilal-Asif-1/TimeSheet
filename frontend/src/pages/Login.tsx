@@ -43,6 +43,7 @@ export default function Login({
   msalEnabled = true,
   msalDisabledReason,
 }: LoginProps) {
+  // Ek hi component landing, login aur register ke teen views manage karta hai.
   const [view, setView] = useState<AuthView>("landing");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -52,6 +53,7 @@ export default function Login({
   const [submitting, setSubmitting] = useState(false);
 
   const isLoginView = view === "login";
+  // Current view badalne par heading, description aur button text dobara select hota hai.
   const viewCopy = useMemo(() => {
     switch (view) {
       case "login":
@@ -83,11 +85,13 @@ export default function Login({
   };
 
   const switchView = (nextView: AuthView) => {
+    // View change karte waqt purana error message clear kar dete hain.
     resetFeedback();
     setView(nextView);
   };
 
   const handleMicrosoftLogin = async () => {
+    // Microsoft auth disabled ho to request bhejne ke bajaye clear error show hota hai.
     if (!msalEnabled || !onMicrosoftLogin) {
       setError(msalDisabledReason || "Microsoft sign-in is not available in this environment.");
       return;
@@ -102,6 +106,7 @@ export default function Login({
   };
 
   const submitAuth = async () => {
+    // Login aur register dono isi function se sahi backend endpoint par jate hain.
     try {
       resetFeedback();
       setSubmitting(true);
@@ -131,6 +136,7 @@ export default function Login({
   };
 
   if (view === "landing") {
+    // Form se pehle product landing screen dikhai jati hai.
     return (
       <LandingView
         eyebrow={viewCopy.eyebrow}
@@ -142,6 +148,7 @@ export default function Login({
     );
   }
 
+  // Landing ke ilawa login ya registration ka selected form render hota hai.
   return (
     <div className={authShellClass}>
       <main className="mx-auto flex min-h-screen max-w-[720px] items-center justify-center p-6">

@@ -7,6 +7,7 @@ type Props = { dashboard: DashboardController };
 
 export function TaskCreatePage({ dashboard }: Props) {
   const { message, overview, setActivePage, setTaskForm, taskForm } = dashboard;
+  // FileList ko array mein badal kar selected file names preview kiye jate hain.
   const selectedFiles = taskForm.files ? Array.from(taskForm.files) : [];
 
   return (
@@ -73,6 +74,7 @@ export function TaskCreatePage({ dashboard }: Props) {
 }
 
 function FormSection({ children, title }: { children: ReactNode; title: string }) {
+  // Long task form ko readable numbered sections mein divide karta hai.
   return (
     <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
       <h3 className="text-sm font-black uppercase text-zinc-300">{title}</h3>

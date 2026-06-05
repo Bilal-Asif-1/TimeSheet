@@ -9,6 +9,7 @@ const cardClass =
 
 export function TasksPage({ dashboard }: Props) {
   const { setActivePage, totals, workflowTasks, user } = dashboard;
+  // Current user ko assign aur current user ke banaye tasks alag count kiye jate hain.
   const assignedToMe = workflowTasks.filter((item) => item.assignedTo.id === user.id);
   const createdByMe = workflowTasks.filter((item) => item.assignedBy.id === user.id);
 
@@ -39,6 +40,7 @@ export function TasksPage({ dashboard }: Props) {
 }
 
 export function TaskStatusPage({ dashboard, page }: Props & { page: "taskPending" | "taskProgress" | "taskCompleted" }) {
+  // Ek hi component pending, in-progress aur completed task lists render karta hai.
   const map = {
     taskPending: { eyebrow: "Pending Tasks", title: "Pending", empty: "No pending tasks yet.", items: dashboard.totals.pending },
     taskProgress: { eyebrow: "Active Tasks", title: "In progress", empty: "No active work right now.", items: dashboard.totals.active },

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from "react";
 
+// Ye purana/simple auth context helper hai; current main JWT flow App.tsx manage karta hai.
 const AuthContext = createContext<any>(null);
 
 export const AuthProvider = ({ children }: any) => {

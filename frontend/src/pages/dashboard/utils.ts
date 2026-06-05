@@ -1,5 +1,6 @@
 import type { WorkspacePage } from "./types";
 
+// Main sidebar mein dikhne wale pages.
 export const workspacePages: { id: WorkspacePage; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "tasks", label: "Tasks" },
@@ -12,6 +13,7 @@ export const industries = ["Technology", "Finance", "Healthcare", "Education", "
 export const teamSizes = ["1-10", "11-50", "51-200", "201-1000", "1000+"];
 
 export const pagePaths: Record<WorkspacePage, string> = {
+  // Har internal page name ka browser URL yahan central place par defined hai.
   overview: "/dashboard",
   tasks: "/dashboard/tasks",
   timesheets: "/dashboard/timesheets",
@@ -33,11 +35,13 @@ export const pagePaths: Record<WorkspacePage, string> = {
 };
 
 export const pageToPath = (page: WorkspacePage, id?: number | string | null) => {
+  // Page name ko navigation ke liye URL mein convert karta hai.
   if (page === "taskDetails" && id) return `${pagePaths.taskDetails}/${id}`;
   return pagePaths[page];
 };
 
 export const pathToPage = (path: string): WorkspacePage => {
+  // Current browser URL se active sidebar/dashboard page maloom hota hai.
   if (path === "/dashboard" || path === "/dashboard/") return "overview";
   if (path === "/dashboard/tasks/create") return "createTask";
   if (path === "/dashboard/tasks/pending") return "taskPending";
@@ -60,6 +64,7 @@ export const pathToPage = (path: string): WorkspacePage => {
 };
 
 export const formatOrganizationId = (value: string) => {
+  // User input ko uppercase ORG-XXXX format mein rakhta hai.
   const compactValue = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (!compactValue) return "";
   const suffix = compactValue.startsWith("ORG") ? compactValue.slice(3) : compactValue;
@@ -67,6 +72,7 @@ export const formatOrganizationId = (value: string) => {
 };
 
 export const formatDuration = (seconds: number) => {
+  // Total seconds ko timer ke HH:MM:SS format mein dikhata hai.
   const safe = Math.max(0, Math.floor(seconds));
   const h = Math.floor(safe / 3600);
   const m = Math.floor((safe % 3600) / 60);

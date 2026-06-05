@@ -1,5 +1,6 @@
 import type { Configuration, PopupRequest } from "@azure/msal-browser";
 
+// Ye alternate/basic MSAL config file hai; main app authConfig.ts wala setup use karti hai.
 export const msalConfig: Configuration = {
   auth: {
     clientId: import.meta.env.VITE_MS_CLIENT_ID || "YOUR_CLIENT_ID",
@@ -12,7 +13,7 @@ export const msalConfig: Configuration = {
   },
 };
 
-// login scopes
+// Microsoft Graph se basic user profile read karne ki permission.
 export const loginRequest: PopupRequest = {
   scopes: ["User.Read"],
 };

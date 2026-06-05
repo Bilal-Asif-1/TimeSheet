@@ -21,13 +21,16 @@ type DashboardProps = {
 };
 
 export default function Dashboard({ token, user }: DashboardProps) {
+  // Custom controller dashboard ka data, forms aur API actions ek jagah manage karta hai.
   const dashboard = useDashboardController(token, user);
   const { activePage, overview, selectedTaskId, workflowTasks } = dashboard;
   const hasOrganization = Boolean(overview.organization);
   const organizationPages = ["createTask", "createOrganization", "organizationDetails", "employees", "teams", "departments"];
   const isOrganizationArea = organizationPages.includes(activePage);
   const showOrganizationTopNav = isOrganizationArea && activePage !== "createTask";
+  // URL wale task id ko loaded tasks mein dhoond kar detail page ko diya jata hai.
   const selectedTask = workflowTasks.find((task) => task.id === selectedTaskId) || null;
+  // Organization required page ko bina organization ke khola jaye to list page dikhate hain.
   const organizationElement = (element: ReactElement) => (hasOrganization ? element : <OrganizationsPage dashboard={dashboard} />);
   const taskDetailElement = selectedTask ? <TaskDetailsPage dashboard={dashboard} task={selectedTask} /> : <TaskLoadingPage />;
 
@@ -44,6 +47,7 @@ export default function Dashboard({ token, user }: DashboardProps) {
       )}
 
       <Routes>
+        {/* Dashboard ke andar har URL ka apna page component hai. */}
         <Route index element={<OverviewPage dashboard={dashboard} />} />
         <Route path="tasks" element={<TasksPage dashboard={dashboard} />} />
         <Route path="tasks/create" element={<TaskCreatePage dashboard={dashboard} />} />

@@ -7,9 +7,11 @@ type Props = { dashboard: DashboardController; task: WorkflowTask };
 
 export function TaskDetailsPage({ dashboard, task }: Props) {
   const { apiBase, completion, setActivePage, setCompletion, user } = dashboard;
+  // Sirf assigned employee apne pending/active task ka timer aur completion control use kar sakta hai.
   const isMine = task.assignedTo.id === user.id;
   const backPage = task.status === "pending" ? "taskPending" : task.status === "in_progress" ? "taskProgress" : "taskCompleted";
   const runningSeconds = task.startedAt ? Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000) : 0;
+  // Backend ka saved time aur current running session mila kar live total banta hai.
   const trackedSeconds = task.totalSeconds + runningSeconds;
   const canShowActions = task.status !== "completed" && isMine;
 

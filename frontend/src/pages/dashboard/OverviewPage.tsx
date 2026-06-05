@@ -12,9 +12,11 @@ const cardClass =
 
 export function OverviewPage({ dashboard }: Props) {
   const { data, setActivePage, totals, user } = dashboard;
+  // Workspace title mein poore naam ke bajaye user ka first name use hota hai.
   const firstName = user.name.trim().split(/\s+/)[0] || "My";
   const completedCount = totals.completed.length;
   const cards = [
+    // Har KPI click par uske relevant detailed page par navigation hoti hai.
     { label: "Pending Tasks", value: totals.pending.length, note: "Awaiting assignment", tone: "warning", page: "taskPending" },
     { label: "Active Tasks", value: totals.active.length, note: "In progress", tone: "info", page: "taskProgress" },
     { label: "Completed Tasks", value: completedCount, note: "Logged entries", tone: "success", page: "taskCompleted" },
