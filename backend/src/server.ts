@@ -30,6 +30,18 @@ function canonicalOrigin(origin: string): string {
   }
 }
 
+function isLocalDevelopmentOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    return (
+      url.protocol === "http:" &&
+      (url.hostname === "localhost" || url.hostname === "127.0.0.1")
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Allowed browser origins for credentialed CORS (never "*" with credentials).
  * Defaults always merged with env so production IP is not dropped when CORS_ORIGINS is set.
@@ -69,7 +81,7 @@ const corsOptions: CorsOptions = {
       return;
     }
     const key = canonicalOrigin(origin);
-    if (allowedOriginKeys.has(key)) {
+    if (allowedOriginKeys.has(key) || isLocalDevelopmentOrigin(origin)) {
       // Reflect the browser's Origin value (required when credentials: true; no wildcard).
       callback(null, origin);
       return;
@@ -112,10 +124,10 @@ const startServer = async () => {
 
     // 3. start server ONLY after DB is ready
     app.listen(Number(PORT), HOST, () => {
-      console.log(`🚀 Server running on ${HOST}:${PORT}`);
+      console.log(` Server running on ${HOST}:${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    console.error("Failed to start server:", error);
 
     // hard fail (important in Docker / production)
     process.exit(1);
