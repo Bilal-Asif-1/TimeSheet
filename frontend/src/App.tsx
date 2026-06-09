@@ -1,6 +1,7 @@
 import { useMsal } from "@azure/msal-react";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { getApiError } from "./api/apiError";
 import { api } from "./api/http";
 import { loginRequest, msalDisabledReason } from "./auth/authConfig";
 import Dashboard from "./pages/Dashboard";
@@ -41,6 +42,7 @@ function AppWithMsal() {
     return raw ? (JSON.parse(raw) as AppUser) : null;
   });
   const [syncingMicrosoft, setSyncingMicrosoft] = useState(false);
+  const [microsoftError, setMicrosoftError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -52,10 +54,16 @@ function AppWithMsal() {
 
       try {
         setSyncingMicrosoft(true);
+        setMicrosoftError("");
         const response = await instance.acquireTokenSilent({
           scopes: loginRequest.scopes,
           account: accounts[0],
+          forceRefresh: true,
         });
+
+        if (!response.idToken) {
+          throw new Error("Microsoft did not return an ID token.");
+        }
 
         const syncRes = await api.post<AuthResponse>(
           "/auth/microsoft/sync",
@@ -72,15 +80,19 @@ function AppWithMsal() {
         localStorage.setItem("appUser", JSON.stringify(payload.user));
         setToken(payload.token);
         setUser(payload.user);
+        navigate("/dashboard", { replace: true });
       } catch (error) {
         console.error("Microsoft sync failed:", error);
+        setMicrosoftError(
+          getApiError(error, "Microsoft sign-in completed, but the application session could not be created."),
+        );
       } finally {
         setSyncingMicrosoft(false);
       }
     };
 
     syncMicrosoftUser();
-  }, [accounts, instance, token]);
+  }, [accounts, instance, navigate, token]);
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -155,6 +167,7 @@ function AppWithMsal() {
               onMicrosoftLogin={() => instance.loginRedirect(loginRequest)}
               isMicrosoftLoading={inProgress !== "none"}
               msalEnabled
+              externalError={microsoftError}
             />
           }
         />

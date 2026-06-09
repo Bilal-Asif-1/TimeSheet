@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getApiError } from "../api/apiError";
 import { api } from "../api/http";
 import AuthField from "./auth/AuthField";
@@ -21,6 +21,7 @@ type LoginProps = {
   isMicrosoftLoading?: boolean;
   msalEnabled?: boolean;
   msalDisabledReason?: string;
+  externalError?: string;
 };
 
 type AuthView = "landing" | "login" | "register";
@@ -42,6 +43,7 @@ export default function Login({
   isMicrosoftLoading = false,
   msalEnabled = true,
   msalDisabledReason,
+  externalError = "",
 }: LoginProps) {
   // Ek hi component landing, login aur register ke teen views manage karta hai.
   const [view, setView] = useState<AuthView>("landing");
@@ -51,6 +53,12 @@ export default function Login({
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!externalError) return;
+    setView("login");
+    setError(externalError);
+  }, [externalError]);
 
   const isLoginView = view === "login";
   // Current view badalne par heading, description aur button text dobara select hota hai.

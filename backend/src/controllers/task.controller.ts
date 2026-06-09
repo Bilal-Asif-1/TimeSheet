@@ -53,7 +53,13 @@ export const createTask = async (req: Request, res: Response) => {
 
     const pool = await connectDB();
     const assignee = await pool.query(
-      `SELECT id FROM users WHERE id = $1 AND "organizationId" = $2 LIMIT 1`,
+      `SELECT u.id
+       FROM users u
+       INNER JOIN organization_members om
+         ON om."userId" = u.id
+        AND om."organizationId" = $2
+       WHERE u.id = $1
+       LIMIT 1`,
       [Number(assignedTo), appUser.organizationId],
     );
 

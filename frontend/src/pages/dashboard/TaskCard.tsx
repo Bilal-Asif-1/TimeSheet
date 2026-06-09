@@ -39,8 +39,12 @@ export function TaskCard({ activeOrganizationId, item, onOpen, onSwitchOrganizat
         {item.organization.name} · {item.organization.orgCode}
       </button>
       <strong className="text-base">{item.title}</strong>
-      <div className="flex items-center justify-between gap-3 text-sm text-zinc-400">
-        <span>{item.assignedTo.name}</span>
+      <div className="grid gap-1 text-sm text-zinc-400 sm:grid-cols-2">
+        <span>Assigned to: {item.assignedTo.name}</span>
+        <span>Created by: {item.assignedBy.name}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
+        <span>{item.assignedTo.email}</span>
         <span>{formatDuration(trackedSeconds)}</span>
       </div>
     </div>

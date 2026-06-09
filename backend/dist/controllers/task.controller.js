@@ -39,7 +39,13 @@ const createTask = async (req, res) => {
             return res.status(400).json({ error: "Task title and assignee are required." });
         }
         const pool = await (0, db_1.connectDB)();
-        const assignee = await pool.query(`SELECT id FROM users WHERE id = $1 AND "organizationId" = $2 LIMIT 1`, [Number(assignedTo), appUser.organizationId]);
+        const assignee = await pool.query(`SELECT u.id
+       FROM users u
+       INNER JOIN organization_members om
+         ON om."userId" = u.id
+        AND om."organizationId" = $2
+       WHERE u.id = $1
+       LIMIT 1`, [Number(assignedTo), appUser.organizationId]);
         if (assignee.rows.length === 0) {
             return res.status(404).json({ error: "Selected employee was not found in this organization." });
         }

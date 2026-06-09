@@ -177,12 +177,20 @@ export const getOrganizationOverview = async (req: Request, res: Response) => {
     );
 
     const employees = await pool.query(
-      `SELECT id, name, email, role, department, provider, "createdAt"
-       FROM users
-       WHERE "organizationId" = $1
+      `SELECT u.id,
+              u.name,
+              u.email,
+              om.role,
+              om.department,
+              u.provider,
+              om."createdAt"
+       FROM organization_members om
+       INNER JOIN users u ON u.id = om."userId"
+       WHERE om."organizationId" = $1
        ORDER BY
-        CASE role WHEN 'ceo' THEN 0 WHEN 'manager' THEN 1 ELSE 2 END,
-        name ASC`,
+        CASE om.role WHEN 'ceo' THEN 0 WHEN 'manager' THEN 1 ELSE 2 END,
+        u.name ASC,
+        u.email ASC`,
       [organization.id],
     );
 

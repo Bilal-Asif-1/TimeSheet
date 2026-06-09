@@ -24,7 +24,7 @@ export function OrganizationTopNav({ activePage, hasOrganization }: Props) {
   const homePath = hasOrganization ? pageToPath("organizationDetails") : pageToPath("myOrganization");
 
   return (
-    <div className="sticky top-24 z-[18] flex flex-wrap gap-2.5 rounded-[18px] border border-white/10 bg-black/80 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.28)] backdrop-blur-[18px]">
+    <div className="sticky top-28 z-[18] flex flex-wrap gap-2.5 rounded-[18px] border border-white/10 bg-black/80 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.28)] backdrop-blur-[18px]">
       <NavLink className={normalLink} to={homePath}>
         {homeLabel}
       </NavLink>

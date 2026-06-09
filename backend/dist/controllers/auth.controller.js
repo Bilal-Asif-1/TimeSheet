@@ -176,8 +176,10 @@ exports.login = login;
 const microsoftSync = async (req, res) => {
     try {
         const claims = req.user;
-        const email = claims?.preferred_username?.toLowerCase().trim();
-        const oid = claims?.oid;
+        const email = (claims?.preferred_username || claims?.email || claims?.upn)
+            ?.toLowerCase()
+            .trim();
+        const oid = claims?.oid || claims?.sub;
         const name = claims?.name || "Microsoft User";
         if (!email || !oid) {
             return res.status(400).json({ error: "Missing required Microsoft claims." });

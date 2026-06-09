@@ -8,6 +8,9 @@ type JwtPayloadWithClaims = jwt.JwtPayload & {
   tid?: string;
   oid?: string;
   preferred_username?: string;
+  email?: string;
+  upn?: string;
+  sub?: string;
   name?: string;
 };
 
@@ -58,7 +61,12 @@ export const verifyMicrosoftToken = (
     },
     (err, decoded) => {
       if (err) {
-        return res.status(403).json({ error: "Invalid or expired token." });
+        console.warn("[microsoft-auth] Token verification failed:", err.message);
+        const message =
+          process.env.NODE_ENV === "production"
+            ? "Invalid or expired Microsoft token."
+            : `Microsoft token verification failed: ${err.message}`;
+        return res.status(403).json({ error: message });
       }
 
       // Attach decoded user info for next handlers.

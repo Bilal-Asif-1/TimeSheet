@@ -228,8 +228,10 @@ export const login = async (req: Request, res: Response) => {
 export const microsoftSync = async (req: Request, res: Response) => {
   try {
     const claims = (req as Request & { user?: Record<string, string> }).user;
-    const email = claims?.preferred_username?.toLowerCase().trim();
-    const oid = claims?.oid;
+    const email = (claims?.preferred_username || claims?.email || claims?.upn)
+      ?.toLowerCase()
+      .trim();
+    const oid = claims?.oid || claims?.sub;
     const name = claims?.name || "Microsoft User";
 
     if (!email || !oid) {

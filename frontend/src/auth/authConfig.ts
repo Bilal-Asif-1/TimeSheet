@@ -23,6 +23,7 @@ export const msalConfig = {
 // Login ke waqt Microsoft se ye basic user permissions mangi jati hain.
 export const loginRequest: RedirectRequest = {
   scopes: ["openid", "profile", "email", "User.Read"],
+  prompt: "select_account",
 };
 
 export const isMicrosoftAuthEnabled = authMode !== "local-only";

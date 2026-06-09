@@ -2,13 +2,19 @@ import type { ReactNode } from "react";
 import { Button, Card, Field, PageHeader, SelectField, TextAreaField } from "../../components/ui";
 import type { DashboardController } from "./controllerType";
 import type { WorkflowTask } from "./types";
+import { formatRole } from "./utils";
 
 type Props = { dashboard: DashboardController };
 
 export function TaskCreatePage({ dashboard }: Props) {
-  const { message, overview, setActivePage, setTaskForm, taskForm } = dashboard;
+  const { message, overview, setActivePage, setTaskForm, taskForm, user } = dashboard;
   // FileList ko array mein badal kar selected file names preview kiye jate hain.
   const selectedFiles = taskForm.files ? Array.from(taskForm.files) : [];
+  const teamMembers = overview.employees.filter((employee) => employee.id !== user.id);
+  const currentUser = overview.employees.find((employee) => employee.id === user.id);
+  const selectedAssignee = overview.employees.find(
+    (employee) => String(employee.id) === taskForm.assignee,
+  );
 
   return (
     <section className="mx-auto grid w-full max-w-[880px] gap-4">
@@ -29,10 +35,29 @@ export function TaskCreatePage({ dashboard }: Props) {
           <Field placeholder="Task title" value={taskForm.title} onChange={(event) => setTaskForm({ ...taskForm, title: event.target.value })} />
           <SelectField value={taskForm.assignee} onChange={(event) => setTaskForm({ ...taskForm, assignee: event.target.value })}>
             <option value="">Assign to employee</option>
-            {overview.employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>{employee.name} - {employee.department || "Unassigned"}</option>
-            ))}
+            <optgroup label="Team members">
+              {teamMembers.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.name} - {employee.email} - {formatRole(employee.role)}
+                </option>
+              ))}
+            </optgroup>
+            {currentUser && (
+              <optgroup label="Self assignment">
+                <option value={currentUser.id}>
+                  Assign to myself - {currentUser.email}
+                </option>
+              </optgroup>
+            )}
           </SelectField>
+          {selectedAssignee && (
+            <p className="text-sm text-zinc-400">
+              Assigning to:{" "}
+              <strong className="text-white">
+                {selectedAssignee.name} ({selectedAssignee.email})
+              </strong>
+            </p>
+          )}
           <TextAreaField placeholder="Task details, expected output, context, acceptance criteria..." rows={6} value={taskForm.description} onChange={(event) => setTaskForm({ ...taskForm, description: event.target.value })} />
           </FormSection>
 
