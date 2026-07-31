@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+
 import bcrypt from "bcryptjs";
 import { connectDB } from "../config/db";
 import { issueAppToken } from "../utils/appToken";
